@@ -1,0 +1,82 @@
+/* ==========================================================================
+   منارة — Design Tokens
+   مفهوم بصري: المنارة التي ترشد السفن، كما يرشد المركز التعليمي طلابه
+   ========================================================================== */
+
+:root {
+  /* -- الألوان الأساسية -- */
+  --ink: #12181A;
+  --ink-soft: #3A4547;
+  --paper: #F4F0E6;
+  --paper-raised: #FFFFFF;
+  --paper-line: #DCD5C4;
+
+  --deep-sea: #123531;
+  --deep-sea-2: #1B4A44;
+  --sea-tint: #E7EEEC;
+
+  --beacon: #C8963A;
+  --beacon-bright: #E0AE54;
+  --beacon-dim: #A97B2C;
+
+  --tide: #8B3A2B;
+  --tide-bright: #B5503C;
+
+  --ok: #2E6F52;
+
+  /* -- الوضع الليلي -- */
+  --night: #0B1210;
+  --night-raised: #11201C;
+  --night-raised-2: #16271F;
+  --night-line: #23342E;
+  --night-ink: #E9E4D6;
+  --night-ink-soft: #A7B0AB;
+
+  /* -- المسافات -- */
+  --space-1: 0.4rem;
+  --space-2: 0.8rem;
+  --space-3: 1.4rem;
+  --space-4: 2.2rem;
+  --space-5: 3.6rem;
+  --space-6: 5.6rem;
+
+  /* -- الخطوط -- */
+  --font-display: "Amiri", "Georgia", serif;
+  --font-body: "Tajawal", "Segoe UI", sans-serif;
+
+  /* -- الحواف -- */
+  --radius-s: 6px;
+  --radius-m: 12px;
+  --radius-l: 22px;
+
+  /* -- الظل -- */
+  --shadow-soft: 0 10px 30px -14px rgba(18, 24, 26, 0.35);
+  --shadow-lift: 0 18px 44px -18px rgba(18, 24, 26, 0.45);
+
+  /* -- الانتقال -- */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 160ms;
+  --dur-med: 340ms;
+  --dur-slow: 640ms;
+
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+  --ink: var(--night-ink);
+  --ink-soft: var(--night-ink-soft);
+  --paper: var(--night);
+  --paper-raised: var(--night-raised);
+  --paper-line: var(--night-line);
+  --sea-tint: var(--night-raised-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

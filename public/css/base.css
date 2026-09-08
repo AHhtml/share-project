@@ -1,0 +1,320 @@
+/* ==========================================================================
+   منارة — الأساسيات
+   ========================================================================== */
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  background: var(--paper);
+  color: var(--ink);
+  transition: background var(--dur-med) var(--ease), color var(--dur-med) var(--ease);
+  direction: rtl;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  margin: 0;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+p { line-height: 1.8; margin: 0; }
+
+a { color: inherit; text-decoration: none; }
+
+img { max-width: 100%; display: block; }
+
+button, input, select, textarea {
+  font-family: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--beacon);
+  outline-offset: 3px;
+}
+
+::selection { background: var(--beacon); color: var(--deep-sea); }
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-4);
+}
+
+@media (max-width: 640px) {
+  .container { padding: 0 var(--space-3); }
+}
+
+/* -- شارات وأزرار -- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 0.85rem 1.6rem;
+  border-radius: var(--radius-s);
+  transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+}
+.btn:active { transform: translateY(1px); }
+
+.btn-primary {
+  background: var(--beacon);
+  color: var(--deep-sea);
+}
+.btn-primary:hover { background: var(--beacon-bright); box-shadow: var(--shadow-soft); }
+
+.btn-outline {
+  background: transparent;
+  border: 1.5px solid var(--paper-line);
+  color: var(--ink);
+}
+.btn-outline:hover { border-color: var(--beacon); color: var(--beacon-dim); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--ink-soft);
+  padding: 0.6rem 0.9rem;
+}
+.btn-ghost:hover { color: var(--beacon-dim); }
+
+.btn-danger {
+  background: transparent;
+  border: 1.5px solid var(--tide);
+  color: var(--tide);
+}
+.btn-danger:hover { background: var(--tide); color: #fff; }
+
+.btn-sm { padding: 0.45rem 0.9rem; font-size: 0.82rem; border-radius: var(--radius-s); }
+
+/* -- شريط التنقل العلوي -- */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  backdrop-filter: blur(10px);
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  border-bottom: 1px solid var(--paper-line);
+}
+
+.topbar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.1rem 0;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--deep-sea);
+}
+html.dark .brand { color: var(--beacon-bright); }
+
+.brand .beacon-dot {
+  width: 11px; height: 11px; border-radius: 50%;
+  background: var(--beacon);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--beacon) 25%, transparent);
+  animation: pulse-beacon 2.6s var(--ease) infinite;
+}
+
+@keyframes pulse-beacon {
+  0%, 100% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--beacon) 25%, transparent); }
+  50% { box-shadow: 0 0 0 9px color-mix(in srgb, var(--beacon) 10%, transparent); }
+}
+
+.nav-links {
+  display: flex;
+  gap: var(--space-4);
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.nav-links a:hover { color: var(--beacon-dim); }
+
+/* -- مفتاح الوضع الليلي -- */
+
+.theme-toggle {
+  position: relative;
+  width: 52px;
+  height: 28px;
+  border-radius: 20px;
+  background: var(--sea-tint);
+  border: 1px solid var(--paper-line);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 3px;
+}
+.theme-toggle .knob {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--beacon);
+  transition: transform var(--dur-med) var(--ease);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px;
+}
+html.dark .theme-toggle .knob { transform: translateX(-24px); background: var(--night-ink); }
+
+/* -- تذييل -- */
+
+.footer {
+  border-top: 1px solid var(--paper-line);
+  padding: var(--space-4) 0;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+.footer-inner {
+  display: flex; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+}
+
+/* -- بطاقة عامة -- */
+
+.card {
+  background: var(--paper-raised);
+  border: 1px solid var(--paper-line);
+  border-radius: var(--radius-m);
+}
+
+/* -- شارة دور -- */
+.role-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.25rem 0.7rem;
+  border-radius: 20px;
+  background: var(--sea-tint);
+  color: var(--deep-sea-2);
+}
+html.dark .role-chip { color: var(--beacon-bright); }
+
+/* -- سكرول بار خفيف -- */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--paper-line); border-radius: 10px; }
+
+/* -- تنبيه توست -- */
+.toast-stack {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.toast {
+  background: var(--deep-sea);
+  color: #F4F0E6;
+  padding: 0.9rem 1.3rem;
+  border-radius: var(--radius-s);
+  font-size: 0.9rem;
+  font-weight: 600;
+  box-shadow: var(--shadow-lift);
+  border-inline-start: 4px solid var(--beacon);
+  animation: toast-in var(--dur-med) var(--ease);
+  display: flex; align-items: center; gap: 0.6rem;
+}
+.toast.error { border-inline-start-color: var(--tide-bright); }
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* -- نافذة منبثقة (Modal) -- */
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(11, 18, 16, 0.55);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 150;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-med) var(--ease);
+  padding: var(--space-3);
+}
+.modal-backdrop.open { opacity: 1; pointer-events: auto; }
+
+.modal {
+  background: var(--paper-raised);
+  border-radius: var(--radius-l);
+  padding: var(--space-4);
+  width: min(480px, 100%);
+  max-height: 88vh;
+  overflow-y: auto;
+  transform: translateY(18px) scale(0.98);
+  transition: transform var(--dur-med) var(--ease);
+  box-shadow: var(--shadow-lift);
+  border: 1px solid var(--paper-line);
+}
+.modal-backdrop.open .modal { transform: translateY(0) scale(1); }
+
+.modal h3 { font-size: 1.3rem; margin-bottom: var(--space-3); }
+
+.field { margin-bottom: var(--space-3); }
+.field label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  margin-bottom: 0.4rem;
+}
+.field input, .field select, .field textarea {
+  width: 100%;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--radius-s);
+  border: 1.5px solid var(--paper-line);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 0.95rem;
+  transition: border-color var(--dur-fast) var(--ease);
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: var(--beacon);
+}
+.field textarea { resize: vertical; min-height: 90px; }
+
+.modal-actions {
+  display: flex;
+  gap: 0.7rem;
+  justify-content: flex-start;
+  margin-top: var(--space-3);
+}
+
+/* -- حالة فارغة -- */
+.empty-state {
+  text-align: center;
+  padding: var(--space-5) var(--space-3);
+  color: var(--ink-soft);
+}
+.empty-state .glyph {
+  font-size: 2.4rem;
+  margin-bottom: var(--space-2);
+  opacity: 0.6;
+}
+
+/* -- عناصر عامة للحركة -- */
+.reveal {
+  opacity: 0;
+  transform: translateY(16px);
+}
+.reveal.in {
+  animation: reveal-up var(--dur-slow) var(--ease) forwards;
+}
+@keyframes reveal-up {
+  to { opacity: 1; transform: translateY(0); }
+}
