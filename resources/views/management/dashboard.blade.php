@@ -52,7 +52,7 @@
         </button>
 
         <!-- القائمة الفرعية: إدارة المستخدمين -->
-        <div id="usersMenu" class="collapsible-menu" style="padding-right: 15px; margin-top: 4px;">
+        <div id="usersMenu" class="collapsible-menu open" style="padding-right: 15px; margin-top: 4px;">
           
           <!-- إدارة الطلاب (تفتح قائمة التخصصات بـ Transition) -->
           <button type="button" onclick="toggleMenu('studentsMenu')" class="btn btn-ghost" style="text-align: right; justify-content: space-between; display: flex; width: 100%; font-size: 0.9rem; background: none; border: none; cursor: pointer; color: #cbd5e1;">
@@ -60,8 +60,12 @@
             <span>▾</span>
           </button>
           
-          <!-- تخصصات الطلاب (ديناميكية من قاعدة البيانات) -->
-          <div id="studentsMenu" class="collapsible-menu" style="padding-right: 15px; margin-top: 2px;">
+          <!-- تخصصات الطلاب والقائمة المنسدلة -->
+          <div id="studentsMenu" class="collapsible-menu open" style="padding-right: 15px; margin-top: 2px;">
+            <!-- رابط لعرض كل الطلاب في المركز -->
+            {{-- <a href="{{ route('management.students.index') }}" class="btn btn-ghost" style="text-align: right; font-size: 0.85rem; text-decoration: none; color: #38bdf8; display: block; padding: 4px 0; font-weight: bold;">
+                • كل الطلاب
+            </a> --}}
             @php
                 $sidebarSubjects = App\Models\Subject::all();
             @endphp

@@ -19,7 +19,7 @@
     background: rgba(0, 0, 0, 0.02);
   }
   .sub-menu.open {
-    max-height: 300px; /* تفتح بحسب عدد المواد */
+    max-height: 300px;
     transition: max-height 0.3s ease-in;
   }
   .sub-menu a {
@@ -30,9 +30,71 @@
   .sub-menu a:hover {
     opacity: 1;
   }
+  /* تنسيق أيقونة الإشعارات العلوية */
+  .topbar-notifications {
+    position: relative;
+    display: inline-block;
+  }
+  .notifications-dropdown {
+    position: absolute;
+    right: 0;
+    top: 45px;
+    width: 320px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    display: none;
+    z-index: 1000;
+    border: 1px solid #e2e8f0;
+    text-align: right;
+  }
+  .notifications-dropdown.show {
+    display: block;
+  }
+  .notifications-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid #e2e8f0;
+    font-weight: bold;
+    font-size: 0.95rem;
+    color: #1e293b;
+    background: #f8fafc;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+  }
+  .notifications-body {
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  .notification-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.85rem;
+    color: #334155;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    position: relative;
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+  .notification-item:hover {
+    background: #f8fafc;
+  }
 </style>
 </head>
 <body data-home="{{ url('/') }}" data-login="{{ route('login') }}">
+
+<!-- تعريف كائن Manara في البداية قبل تحميل أي سكربت خارجي يطلبه لضمان عدم حدوث خطأ undefined -->
+<script>
+  window.Manara = window.Manara || {
+    currentUser: {
+      id: {{ Auth::id() }},
+      name: "{{ Auth::user()->name }}",
+      email: "{{ Auth::user()->email }}"
+    }
+  };
+</script>
 
 <div class="mobile-topbar">
   <button id="menuToggle" class="btn-ghost" style="color:#fff; font-size:1.3rem; background:none; border:none; cursor:pointer;">☰</button>
@@ -50,16 +112,15 @@
     <nav class="sidebar-nav">
       <a href="#" class="active" data-target="overview" onclick="showOverviewSection()">🏠 الرئيسية</a>
       
-      <!-- خيار المواد المسجلة الذي يتحكم بالقائمة المنسدلة -->
+      <!-- خيار المواد المسجلة -->
       <a href="#" id="toggleSubjectsMenu" onclick="toggleSubMenu(event)" style="display: flex; justify-content: space-between; align-items: center;">
         <span>📖 المواد المسجلة</span>
         <span id="menuArrow" style="font-size: 0.8rem; transition: transform 0.3s;">▼</span>
       </a>
       
-      <!-- القائمة الفرعية التي تظهر تحت المواد المسجلة وتجلب المواد ديناميكياً -->
       <div class="sub-menu" id="subjectsSubMenu">
         @forelse($enrolledSubjects as $subject)
-          <a href="#" onclick="goToSubjectView('{{ $subject->name }}', {{ json_encode($subject->lessons) }}, {{ json_encode($subject->assignments) }})" style="display: block; text-decoration: none; color: inherit;">
+          <a href="" onclick="goToSubjectView('{{ $subject->name }}', {{ json_encode($subject->lessons) }}, {{ json_encode($subject->assignments) }})" style="display: block; text-decoration: none; color: inherit;">
             ▪ {{ $subject->name }}
           </a>
         @empty
@@ -67,10 +128,10 @@
         @endforelse
       </div>
 
-      <a href="{{ route('student.announcements.index') }}" data-target="announcements" >📢 الإعلانات</a>
+      <a href="{{ route('student.announcements.index') }}" data-target="announcements" onclick="showSection(event, 'announcements')">📢 الإعلانات</a>
       
       <!-- زر تعديل البيانات الشخصية -->
-      <a href="{{ route('student.profile.edit') }}">تعديل بياناتي الشخصية</a>
+      <a href="#" onclick="showSection(event, 'profile')">⚙️ تعديل بياناتي الشخصية</a>
     </nav>
     <div style="padding: 20px; border-top: 1px solid rgba(0,0,0,0.05); margin-top: auto;">
       <p style="margin-bottom: 10px; font-weight: bold; font-size: 0.9rem;">{{ Auth::user()->name }}</p>
@@ -89,11 +150,56 @@
       </div>
     @endif
 
+    @if(session('error'))
+      <div style="background: #fee2e2; color: #991b1b; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 0.9rem;">
+        {{ session('error') }}
+      </div>
+    @endif
+
     <!-- ===== الرئيسية ===== -->
     <section data-section="overview">
       <div class="main-head">
         <div>
           <h1>مرحباً بك، {{ Auth::user()->name }}</h1>
+        </div>
+        <!-- الهيدر العلوي وفيه زر الإشعارات -->
+        <div style="display: flex; justify-content: flex-start; align-items: center; gap: 20px; margin-bottom: 20px; position: relative;">
+          <div class="topbar-notifications">
+            <button onclick="toggleNotificationsDropdown(event)" class="btn btn-ghost" style="position: relative; background: #fff; border: 1px solid #cbd5e1; border-radius: 50%; width: 42px; height: 42px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+              🔔
+              @php $unreadCount = \App\Models\Notification::where('user_id', Auth::id())->where('is_read', false)->count(); @endphp
+              @if($unreadCount > 0)
+                <span style="position: absolute; top: -2px; left: -2px; background: #dc3545; color: #fff; border-radius: 50%; width: 18px; height: 18px; font-size: 0.65rem; display: flex; align-items: center; justify-content: center; font-weight: bold;">{{ $unreadCount }}</span>
+              @endif
+            </button>
+
+            <div id="notificationsDropdown" class="notifications-dropdown">
+              <div class="notifications-header">الإشعارات</div>
+              <div class="notifications-body">
+                @forelse(\App\Models\Notification::where('user_id', Auth::id())->latest()->get() as $notification)
+                  <div class="notification-item">
+                    <div>
+                      <p style="margin: 0; font-weight: 500;">{{ $notification->message }}</p>
+                      <span style="font-size: 0.7rem; color: #64748b; margin-top: 20px; display: block;">{{ $notification->created_at->diffForHumans() }}</span>
+                    </div>
+                    
+                    <!-- زر/علامة الحذف -->
+                    <form action="{{ route('student.notifications.destroy', $notification->id) }}" method="POST" style="margin: 0;">
+                      @csrf
+                      @method('DELETE')
+                      <button type="submit" style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 1rem; padding: 0 4px; line-height: 1; transition: color 0.2s;" onmouseover="this.style.color='#dc3545'" onmouseout="this.style.color='#94a3b8'" title="حذف الإشعار">
+                        &times;
+                      </button>
+                    </form>
+                  </div>
+                @empty
+                  <div style="padding: 20px; text-align: center; color: #888; font-size: 0.85rem;">
+                    لا توجد إشعارات جديدة.
+                  </div>
+                @endforelse
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -123,7 +229,7 @@
           <a href="#lectures" class="btn btn-outline btn-sm" onclick="showSection(event, 'lectures')">عرض كل المحاضرات</a>
         </div>
         <div id="overviewLectures">
-          @forelse($latestLessons as $lesson)
+          @forelse($latestLessons ?? [] as $lesson)
             <div style="padding: 12px 0; border-bottom: 1px solid var(--border-color, #eee);">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                 <strong>{{ $lesson->title }}</strong>
@@ -274,33 +380,23 @@
   </main>
 </div>
 
-<!-- ===== نافذة تفاصيل المحاضرة ===== -->
-<div class="modal-backdrop" id="lectureViewModal">
-  <div class="modal">
-    <h3 id="lvTitle">عنوان المحاضرة</h3>
-    <p id="lvMeta" style="color:var(--ink-soft); font-size:0.88rem; margin-bottom:1rem;"></p>
-    <p id="lvNotes"></p>
-    <div class="modal-actions">
-      <button type="button" class="btn btn-primary" onclick="UI.closeModal('lectureViewModal')">تم</button>
-    </div>
-  </div>
-</div>
-
-<!-- ===== نافذة أداء الاختبار ===== -->
-<div class="modal-backdrop" id="examTakeModal">
-  <div class="modal">
-    <h3 id="etTitle">اختبار</h3>
-    <p style="color:var(--ink-soft); margin-bottom:1rem;" id="etMeta"></p>
-    <form id="examTakeForm">
-      <input type="hidden" id="etExamId">
-      <div class="field">
-        <label id="etScoreLabel">علامتك</label>
-        <input type="number" id="etScore" min="0" required>
+<!-- ===== نافذة تسليم حل الواجب/الاختبار للطالب ===== -->
+<div class="modal-backdrop" id="submitAssignmentModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center;">
+  <div class="modal" style="background: #fff; padding: 25px; border-radius: 8px; width: 400px; max-width: 90%; text-align: right;">
+    <h3 id="samTitle" style="margin-bottom: 15px; font-size: 1.1rem; color: #0f172a;">تسليم حل الواجب/الاختبار</h3>
+    <form id="submitAssignmentForm" method="POST" enctype="multipart/form-data">
+      @csrf
+      <div class="field" style="margin-bottom: 15px;">
+        <label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9rem;">ملف الحل (PDF, Word, Zip, صور)</label>
+        <input type="file" name="solution_file" required style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem;">
       </div>
-      <p style="font-size:0.8rem; color:var(--ink-soft);">بيئة تجريبية: أدخل علامتك لمحاكاة رصدها في سجلك.</p>
-      <div class="modal-actions">
-        <button type="submit" class="btn btn-primary">حفظ العلامة</button>
-        <button type="button" class="btn btn-ghost" onclick="UI.closeModal('examTakeModal')">إلغاء</button>
+      <div class="field" style="margin-bottom: 20px;">
+        <label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9rem;">ملاحظات للطالب (اختياري)</label>
+        <textarea name="notes" rows="3" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem;" placeholder="أضف أي ملاحظات لمعلمك هنا..."></textarea>
+      </div>
+      <div class="modal-actions" style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button type="submit" class="btn btn-primary" style="background: #0f172a; color: #fff; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;">رفع وإرسال الحل</button>
+        <button type="button" class="btn btn-ghost" onclick="closeSubmitModal()" style="background: #e2e8f0; color: #1e293b; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;">إلغاء</button>
       </div>
     </form>
   </div>
@@ -321,26 +417,38 @@
     }
   }
 
-  // الانتقال الأقسام العامة (مثل الإعلانات والمحاضرات)
+  // دالة إظهار/إخفاء قائمة الإشعارات المنسدلة في الهيدر
+  function toggleNotificationsDropdown(event) {
+    event.stopPropagation();
+    let dropdown = document.getElementById('notificationsDropdown');
+    dropdown.classList.toggle('show');
+  }
+
+  // إغلاق قائمة الإشعارات عند النقر في أي مكان خارجها
+  window.addEventListener('click', function() {
+    let dropdown = document.getElementById('notificationsDropdown');
+    if (dropdown && dropdown.classList.contains('show')) {
+      dropdown.classList.remove('show');
+    }
+  });
+
+  // الانتقال للأقسام العامة
   function showSection(event, sectionName) {
     event.preventDefault();
     document.querySelectorAll('main > section').forEach(sec => sec.hidden = true);
     let targetSec = document.querySelector(`section[data-section="${sectionName}"]`);
     if (targetSec) targetSec.hidden = false;
-  }
 
-  // إظهار قسم تعديل الملف الشخصي
-  function showProfileSection(event) {
-    event.preventDefault();
-    document.querySelectorAll('main > section').forEach(sec => sec.hidden = true);
-    document.querySelector('section[data-section="profile"]').hidden = false;
+    document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+    if (event.currentTarget && event.currentTarget.tagName === 'A') {
+      event.currentTarget.classList.add('active');
+    }
   }
 
   // الانتقال لواجهة تفاصيل المادة المحددة وتعبئة بياناتها
   function goToSubjectView(subjectName, lessons, assignments) {
     document.getElementById('viewSubjectTitle').innerText = 'مادة: ' + subjectName;
     
-    // تعبئة المحاضرات مع رابط المحاضرة
     let lessonsContainer = document.getElementById('viewSubjectLessonsList');
     if (lessons.length > 0) {
       lessonsContainer.innerHTML = lessons.map(l => `
@@ -355,7 +463,6 @@
       lessonsContainer.innerHTML = '<p style="color: #888; font-size: 0.9rem;">لم ينزل المعلم أي محاضرات لهذه المادة بعد.</p>';
     }
 
-    // تعبئة الاختبارات والواجبات مع زر تحميل الملف المرفق إن وجد
     let assignmentsContainer = document.getElementById('viewSubjectAssignmentsList');
     if (assignments.length > 0) {
       assignmentsContainer.innerHTML = assignments.map(a => `
@@ -364,13 +471,16 @@
             <strong>${a.title}</strong>
             <p style="margin: 4px 0 0; font-size: 0.85rem; color: #666;">${a.description || 'لا يوجد وصف'}</p>
             
-            ${a.file_path ? `
-              <div style="margin-top: 8px;">
+            <div style="margin-top: 8px; display: flex; gap: 8px; align-items: center;">
+              ${(a.file_path || a.file) ? `
                 <a href="/student/assignments/${a.id}/download" style="background-color: #0ea5e9; color: #fff; padding: 5px 10px; border-radius: 6px; text-decoration: none; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px;">
                   📎 تحميل ملف الاختبار
                 </a>
-              </div>
-            ` : ''}
+              ` : ''}
+              <button type="button" onclick="openSubmitModal(${a.id}, '${a.title.replace(/'/g, "\\'")}')" style="background-color: #10b981; color: #fff; padding: 5px 10px; border-radius: 6px; border: none; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                📤 تسليم الحل
+              </button>
+            </div>
           </div>
           <span style="background: #f1f5f9; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: bold;">اختبار نشط</span>
         </div>
@@ -379,15 +489,39 @@
       assignmentsContainer.innerHTML = '<p style="color: #888; font-size: 0.9rem;">لا توجد اختبارات لهذه المادة حالياً.</p>';
     }
 
-    // إخفاء كافة الأقسام وإظهار قسم تفاصيل المادة
     document.querySelectorAll('main > section').forEach(sec => sec.hidden = true);
     document.querySelector('section[data-section="subject-details"]').hidden = false;
   }
+
+  // فتح نافذة رفع حل الواجب/الاختبار
+  function openSubmitModal(assignmentId, assignmentTitle) {
+    let modal = document.getElementById('submitAssignmentModal');
+    let form = document.getElementById('submitAssignmentForm');
+    let titleEl = document.getElementById('samTitle');
+    
+    if (modal && form && titleEl) {
+        titleEl.innerText = 'تسليم حل: ' + assignmentTitle;
+        form.action = `/student/assignments/${assignmentId}/submit`;
+        modal.style.display = 'flex'; // اجبار ظهور النافذة
+    } else {
+        console.error("عناصر نافذة التسليم غير موجودة في الصفحة!");
+    }
+}
+
+  // إغلاق نافذة تسليم الحل
+  function closeSubmitModal() {
+    let modal = document.getElementById('submitAssignmentModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
 
   // العودة للرئيسية
   function showOverviewSection() {
     document.querySelectorAll('main > section').forEach(sec => sec.hidden = true);
     document.querySelector('section[data-section="overview"]').hidden = false;
+    document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+    document.querySelector('.sidebar-nav a[data-target="overview"]').classList.add('active');
   }
 </script>
 

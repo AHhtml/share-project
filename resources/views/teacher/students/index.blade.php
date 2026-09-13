@@ -271,6 +271,9 @@
                   <i class="fa-solid fa-user-minus"></i> إزالة من المساق
                 </button>
               </form>
+
+         
+
             </div>
           </div>
         @empty

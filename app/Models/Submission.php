@@ -19,22 +19,11 @@ class Submission extends Model
         'submitted_at',
     ];
 
-    protected $casts = [
-        'submitted_at' => 'datetime',
-        'grade' => 'float',
-    ];
-
-    /**
-     * الواجب التابع له هذا التسليم
-     */
     public function assignment()
     {
         return $this->belongsTo(Assignment::class);
     }
 
-    /**
-     * الطالب الذي قدم التسليم
-     */
     public function student()
     {
         return $this->belongsTo(User::class, 'student_id');

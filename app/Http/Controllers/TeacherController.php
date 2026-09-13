@@ -6,10 +6,12 @@ use App\Models\Assignment;
 use App\Models\Lesson;
 use App\Models\Subject;
 use App\Models\User;
-use App\Models\Announcement; // تأكد من استدعاء مودل الإعلانات إذا كان موجوداً، أو استبدله بـ DB::table
+use App\Models\Announcement;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class TeacherController extends Controller
 {
@@ -17,8 +19,8 @@ class TeacherController extends Controller
     {
         $teacher = Auth::user();
 
-        // جلب مواد هذا المعلم
-        $teacherSubjects = $teacher->subjects;
+        // جلب مواد هذا المعلم مع تجنب الأخطاء إذا لم تكن موجودة
+        $teacherSubjects = $teacher->subjects ?? collect();
 
         // إحصائيات المعلم
         $myLessonsCount = Lesson::where('teacher_id', $teacher->id)->count();
@@ -28,12 +30,15 @@ class TeacherController extends Controller
         $subjectIds = $teacherSubjects->pluck('id');
 
         // حساب عدد الطلاب الحقيقيين فقط (استبعاد المعلمين) المرتبطين بمساقات هذا المعلم
-        $totalStudentsCount = \DB::table('subject_user')
-            ->join('users', 'subject_user.user_id', '=', 'users.id')
-            ->whereIn('subject_user.subject_id', $subjectIds)
-            ->where('users.role', 'student')
-            ->distinct('subject_user.user_id')
-            ->count('subject_user.user_id');
+        $totalStudentsCount = 0;
+        if ($subjectIds->isNotEmpty()) {
+            $totalStudentsCount = DB::table('subject_user')
+                ->join('users', 'subject_user.user_id', '=', 'users.id')
+                ->whereIn('subject_user.subject_id', $subjectIds)
+                ->where('users.role', 'student')
+                ->distinct('subject_user.user_id')
+                ->count('subject_user.user_id');
+        }
 
         // جلب دروس المعلم المرتبطة بالمادة
         $myLessons = Lesson::where('teacher_id', $teacher->id)
@@ -56,35 +61,53 @@ class TeacherController extends Controller
      */
     public function announcementsIndex()
     {
-        // جلب الإعلانات من قاعدة البيانات (مرتبة من الأحدث للأقدم)
-        // ملاحظة: تأكد أن جدول الإعلانات عندك اسمه announcements أو قم بتعديله حسب رغبتك
-        $announcements = \DB::table('announcements')->latest()->get(); 
+        $announcements = DB::table('announcements')->latest()->get(); 
 
         return view('teacher.announcements.index', compact('announcements'));
     }
 
     /**
-     * حفظ ونشر إعلان جديد
+     * حفظ ونشر إعلان جديد وإرسال إشعارات للطلاب المستهدفين
      */
-        public function announcementsStore(Request $request)
-        {
-            $request->validate([
-                'title' => 'required',
-                'body' => 'required',
-            ]);
+    public function announcementsStore(Request $request)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'body' => 'required|string',
+        ]);
 
-            // جلب مادة المعلم الحالية تلقائياً
-            $teacherSubject = auth()->user()->subjects()->first();
+        // جلب مادة المعلم الحالية تلقائياً
+        $teacherSubject = auth()->user()->subjects()->first();
 
-            Announcement::create([
-                'title' => $request->title,
-                'body' => $request->body,
-                'subject_id' => $teacherSubject ? $teacherSubject->id : null, // ربط تلقائي بمادة المعلم
-                'user_id' => auth()->id(),            // حفظ معرف المعلم
-            ]);
+        $announcement = Announcement::create([
+            'title' => $request->title,
+            'body' => $request->body,
+            'subject_id' => $teacherSubject ? $teacherSubject->id : null,
+            'user_id' => auth()->id(),
+        ]);
 
-            return redirect()->back()->with('success', 'تم نشر الإعلان بنجاح.');
+        // جلب الطلاب المرتبطين بالمساق أو جميع طلاب المعلم لإرسال الإشعار إليهم
+        if ($teacherSubject) {
+            $students = $teacherSubject->students;
+        } else {
+            $teacher = Auth::user();
+            $subjectIds = $teacher->subjects()->pluck('subjects.id');
+            $students = User::where('role', 'student')
+                ->whereHas('enrolledSubjects', function($q) use ($subjectIds) {
+                    $q->whereIn('subjects.id', $subjectIds);
+                })->get();
         }
+
+        // إنشاء إشعار لكل طالب
+        foreach ($students as $student) {
+            Notification::create([
+                'user_id' => $student->id,
+                'message' => 'تم نشر إعلان جديد: ' . $announcement->title,
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'تم نشر الإعلان وإرسال التنبيهات للطلاب بنجاح.');
+    }
 
     /**
      * عرض صفحة الملف الشخصي للمعلم
@@ -96,7 +119,7 @@ class TeacherController extends Controller
     }
 
     /**
-     * تحديث بيانات الملف الشخصي للمعلم
+     * تحديث بيانات الملف الشخصي للمعلم مع إنشاء إشعار خاص به
      */
     public function updateProfile(Request $request)
     {
@@ -119,6 +142,12 @@ class TeacherController extends Controller
 
         $user->update($data);
 
+        // إنشاء إشعار للمعلم بتحديث بيانات ملفه الشخصي
+        Notification::create([
+            'user_id' => $user->id,
+            'message' => 'تم تحديث بيانات ملفك الشخصي بنجاح.',
+        ]);
+
         return redirect()->back()->with('success', 'تم تحديث بياناتك الشخصية بنجاح');
     }
 
@@ -127,8 +156,10 @@ class TeacherController extends Controller
      */
     public function removeStudent(Subject $subject, User $student)
     {
-        // 1. التحقق من أن المادة تخص المعلم الحالي لحماية البيانات
-        if ($subject->teacher_id !== Auth::id()) {
+        $teacher = Auth::user();
+
+        // 1. التحقق من أن المادة تابعة للمعلم الحالي عبر الجدول الوسيط
+        if (!$teacher->subjects()->where('subjects.id', $subject->id)->exists()) {
             abort(403, 'غير مصرح لك بإدارة هذه المادة.');
         }
 
@@ -137,12 +168,30 @@ class TeacherController extends Controller
 
         return back()->with('success', 'تم إلغاء تسجيل الطالب من المادة بنجاح.');
     }
- public function destroyAnnouncement($id)
-{
-    $announcement = \App\Models\Announcement::findOrFail($id);
-    $announcement->delete();
 
-    return redirect()->route('teacher.announcements.index')->with('success', 'تم حذف الإعلان بنجاح.');
-}
+    /**
+     * حذف الإعلان وإرسال إشعار للطلاب بحذفه
+     */
+    public function destroyAnnouncement($id)
+    {
+        $announcement = Announcement::findOrFail($id);
+        $title = $announcement->title;
 
+        // إرسال إشعار للطلاب بحذف الإعلان إذا كان مرتبطاً بمادة
+        if ($announcement->subject_id) {
+            $subject = Subject::with('students')->find($announcement->subject_id);
+            if ($subject && $subject->students) {
+                foreach ($subject->students as $student) {
+                    Notification::create([
+                        'user_id' => $student->id,
+                        'message' => 'تم حذف الإعلان: ' . $title,
+                    ]);
+                }
+            }
+        }
+
+        $announcement->delete();
+
+        return redirect()->route('teacher.announcements.index')->with('success', 'تم حذف الإعلان بنجاح.');
+    }
 }

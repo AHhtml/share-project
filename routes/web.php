@@ -43,6 +43,12 @@ Route::middleware('auth')->group(function () {
     
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+    // مسار عام لحذف الإشعارات لأي مستخدم مسجل
+    Route::delete('/notifications/{id}', [StudentController::class, 'destroyNotification'])->name('notifications.destroy');
+
+    // مسار مخصص لحذف الإشعارات للـ Teacher لتجنب خطأ RouteNotFoundException
+    Route::delete('/teacher/notifications/{id}', [StudentController::class, 'destroyNotification'])->name('teacher.notifications.destroy');
+
     // 1. لوحة تحكم الأدمن
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
@@ -57,6 +63,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/users', [ManagementController::class, 'storeUser'])->name('users.store');
         Route::put('/users/{id}', [ManagementController::class, 'update'])->name('users.update');
         Route::delete('/users/{id}', [ManagementController::class, 'destroyUser'])->name('users.destroy');
+
+        // مسارات عرض وإدارة جميع طلاب المركز (المضاف حديثاً)
+        Route::get('/students', [ManagementController::class, 'allStudentsIndex'])->name('students.index');
 
         // مسارات تعديل الطالب
         Route::get('/students/{id}/edit', [ManagementController::class, 'editStudent'])->name('students.edit');
@@ -96,8 +105,8 @@ Route::middleware('auth')->group(function () {
         Route::delete('/students/{id}', [StudentController::class, 'destroy'])->name('students.destroy');
 
         // إلغاء تسجيل طالب من المادة
-        Route::delete('/subjects/{subject}/students/{student}', [TeacherController::class, 'removeStudent'])->name('subjects.students.remove');
-
+        Route::delete('/subjects/{subject}/students/{student}', [StudentController::class, 'removeStudent'])->name('subjects.students.remove');
+        
         // المحاضرات
         Route::get('/lessons', [LessonController::class, 'index'])->name('lessons.index');
         Route::get('/lessons/create', [LessonController::class, 'create'])->name('lessons.create');
@@ -113,6 +122,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/assignments/{id}/edit', [AssignmentController::class, 'edit'])->name('assignments.edit');
         Route::put('/assignments/{id}', [AssignmentController::class, 'update'])->name('assignments.update');
         Route::delete('/assignments/{id}', [AssignmentController::class, 'destroy'])->name('assignments.destroy');
+
+        // مسارات المعلم لاستعراض وتحميل تسليمات الطلاب
+        Route::get('/assignments/{id}/submissions', [AssignmentController::class, 'viewSubmissions'])->name('assignments.submissions');
+        Route::get('/submissions/{id}/download', [AssignmentController::class, 'downloadSubmission'])->name('submissions.download');
     });
 
     // 4. لوحة تحكم الطالب
@@ -127,8 +140,17 @@ Route::middleware('auth')->group(function () {
         Route::get('/lessons', [StudentController::class, 'lessonsIndex'])->name('lessons.index');
         Route::get('/assignments', [StudentController::class, 'assignmentsIndex'])->name('assignments.index');
         
-        // مسار إعلانات الطالب المضاف حديثاً
+        // مسار تحميل ملف الواجب/الاختبار
+        Route::get('/assignments/{id}/download', [AssignmentController::class, 'download'])->name('assignments.download');
+
+        // مسار إرسال وتسليم حل الواجب/الاختبار من الطالب
+        Route::post('/assignments/{id}/submit', [StudentController::class, 'storeSubmission'])->name('assignments.submit');
+
+        // مسار إعلانات الطالب
         Route::get('/announcements', [StudentController::class, 'announcementsIndex'])->name('announcements.index');
+
+        // مسار حذف الإشعارات للطالب
+        Route::delete('/notifications/{id}', [StudentController::class, 'destroyNotification'])->name('notifications.destroy');
 
         // جلب البيانات (AJAX)
         Route::get('/api/lessons', [StudentController::class, 'getLessons'])->name('lessons.json');

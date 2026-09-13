@@ -12,7 +12,6 @@
 
 <!-- تنسيقات إضافية لضمان التجاوب الكامل مع كافة الشاشات -->
 <style>
-  /* تنسيقات عامة للتجاوب */
   *, *:before, *:after {
     box-sizing: border-box;
   }
@@ -20,7 +19,6 @@
     overflow-x: hidden;
   }
   
-  /* التجاوب مع الشاشات الصغيرة (الهواتف) */
   @media (max-width: 768px) {
     .app-shell {
       flex-direction: column;
@@ -80,7 +78,6 @@
     }
   }
 
-  /* جعل الجداول قابلة للتمرير الأفقي على الشاشات الضيقة لتفادي كسر التصميم */
   .table-responsive {
     width: 100%;
     overflow-x: auto;
@@ -93,12 +90,80 @@
     white-space: nowrap;
   }
 
-  /* تحسين عرض المودال على الهواتف */
   .modal {
     max-width: 90%;
     width: 450px;
     padding: 20px;
     box-sizing: border-box;
+  }
+
+  .topbar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+  .notification-container {
+    position: relative;
+  }
+  .notification-btn {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 0.9rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+  .notification-badge {
+    background-color: #ef4444;
+    color: white;
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    border-radius: 50%;
+    font-weight: bold;
+  }
+  .notification-dropdown {
+    display: none;
+    position: absolute;
+    left: 0;
+    top: 110%;
+    width: 320px;
+    background: #ffffff;
+    color: #333;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    z-index: 1100;
+    border: 1px solid #e2e8f0;
+  }
+  .notification-dropdown.active {
+    display: block;
+  }
+  .notification-header {
+    background: #f8fafc;
+    padding: 10px 12px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .notification-item {
+    padding: 10px 12px;
+    font-size: 0.82rem;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    text-align: right;
   }
 </style>
 </head>
@@ -122,13 +187,11 @@
         @endif
       </p>
       
-      <!-- قائمة التنقل الجانبية -->
       <nav class="sidebar-nav" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px;">
         <button type="button" class="btn btn-ghost nav-item active" onclick="switchSection('overview')" style="text-align: right; justify-content: start;">📊 الرئيسية</button>
         <a href="{{ route('teacher.lessons.index') }}" class="btn btn-ghost nav-item" style="text-align: right; justify-content: start; text-decoration: none;">🎥 محاضراتي</a>
         <a href="{{ route('teacher.assignments.index') }}" class="btn btn-ghost nav-item" style="text-align: right; justify-content: start; text-decoration: none;">📝 اختباراتي</a>
         <a href="{{ route('teacher.students.index') }}" class="btn btn-ghost nav-item" style="text-align: right; justify-content: start; text-decoration: none;">🎓 طلابي</a>
-        {{-- <a href="#" class="btn btn-ghost nav-item" style="text-align: right; justify-content: start; text-decoration: none;">🎓 اعلاناتي</a> --}}
         <a href="{{ route('teacher.announcements.index') }}" class="btn btn-ghost nav-item" style="text-align: right; justify-content: start; text-decoration: none;">📢 الإعلانات</a>
         <a href="{{ route('teacher.profile') }}" class="btn btn-ghost nav-item" style="text-align: right; justify-content: start; text-decoration: none;">📊 ملفي الشخصي</a>
       </nav>
@@ -148,29 +211,78 @@
         {{ session('success') }}
       </div>
     @endif
+    @if(session('error'))
+      <div style="padding: 12px 16px; background-color: #f8d7da; color: #721c24; border-radius: 8px; margin-bottom: 20px;">
+        {{ session('error') }}
+      </div>
+    @endif
 
     <!-- ===== الرئيسية ===== -->
     <section data-section="overview">
-      <div class="main-head">
+      <div class="topbar-header">
         <div>
           <h1>أهلاً بك، أ. {{ Auth::user()->name }}</h1>
           <p id="courseNameHead">تابع مساقك الدراسي وأدر طلابك من هنا.</p>
         </div>
+
+        <!-- زر الإشعارات والعداد الديناميكي باستخدام العلاقة المخصصة -->
+        @php
+          $notifications = Auth::user()->customNotifications()->latest()->take(10)->get();
+          $unreadCount = Auth::user()->customNotifications()->count();
+        @endphp
+        <div class="notification-container">
+          <button type="button" class="notification-btn" id="notifBtn" onclick="toggleNotifications()">
+            <span>🔔 الإشعارات</span>
+            @if($unreadCount > 0)
+              <span class="notification-badge" id="notifBadge">{{ $unreadCount }}</span>
+            @endif
+          </button>
+
+          <div class="notification-dropdown" id="notificationDropdown">
+            <div class="notification-header">
+              <span>التنبيهات</span>
+            </div>
+            <div id="notificationsList" style="max-height: 250px; overflow-y: auto;">
+              @forelse($notifications as $notification)
+                <div class="notification-item">
+                  <div style="display: flex; gap: 8px; align-items: flex-start;">
+                    <span>🔔</span>
+                    <div>
+                      <p style="margin: 0; color: #333;">{{ $notification->message }}</p>
+                      <small style="color: #64748b; font-size: 0.75rem;">{{ $notification->created_at->diffForHumans() }}</small>
+                    </div>
+                  </div>
+                  <!-- زر حذف الإشعار الفردي -->
+                  <form action="{{ route('notifications.destroy', $notification->id) }}" method="POST" style="margin: 0;">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 0.9rem; padding: 0;" title="حذف الإشعار">✕</button>
+                  </form>
+                </div>
+              @empty
+                <div style="padding: 15px; text-align: center; color: #888; font-size: 0.85rem;">
+                  لا توجد إشعارات حالياً
+                </div>
+              @endforelse
+            </div>
+          </div>
+        </div>
       </div>
+
       <div class="stat-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 20px;">
         <div class="card stat-card">
           <span class="glyph">🎥</span>
-          <div class="num">{{ $myLessonsCount }}</div>
+          <div class="num">{{ $myLessonsCount ?? 0 }}</div>
           <div class="lbl">محاضرة منشورة</div>
         </div>
         <div class="card stat-card">
           <span class="glyph">📝</span>
-          <div class="num">{{ $myAssignmentsCount }}</div>
+          <div class="num">{{ $myAssignmentsCount ?? 0 }}</div>
           <div class="lbl">اختبار مجدول</div>
         </div>
         <div class="card stat-card">
           <span class="glyph">🎓</span>
-          <div class="num">{{ $totalStudentsCount }}</div>
+          <div class="num">{{ $totalStudentsCount ?? 0 }}</div>
           <div class="lbl">طالب في المسار</div>
         </div>
       </div>
@@ -181,21 +293,22 @@
           <a href="{{ route('teacher.lessons.index') }}" class="btn btn-ghost nav-item" style="text-align: right; justify-content: start; text-decoration: none;">عرض الكل</a>
         </div>
         <div id="overviewLectures">
-          @forelse($myLessons as $lesson)
-            <div style="padding: 12px 0; border-bottom: 1px solid var(--border-color, #eee);">
-              <strong>{{ $lesson->title }}</strong>
-              <br> <br>
-              <h3 style="margin: 0; font-size: 1rem;">
-                <a href="{{ $lesson->description }}" target="_blank" style="color: #0d6efd; text-decoration: none; word-break: break-all; display: inline-flex; align-items: center; gap: 6px;">
-                    {{-- <span>{{ $lesson->description }}</span> --}}
-                    <span>رابط المحاضرة</span>
-                    <span style="font-size: 0.85rem;">🔗</span>
-                </a>
-              </h3>           
-            </div>
-          @empty
-            <p style="color: #888; font-size: 0.9rem; margin-top: 10px;">لم تقم بنشر أي محاضرات بعد.</p>
-          @endforelse
+          @isset($myLessons)
+            @forelse($myLessons as $lesson)
+              <div style="padding: 12px 0; border-bottom: 1px solid var(--border-color, #eee);">
+                <strong>{{ $lesson->title }}</strong>
+                <br> <br>
+                <h3 style="margin: 0; font-size: 1rem;">
+                  <a href="{{ $lesson->description }}" target="_blank" style="color: #0d6efd; text-decoration: none; word-break: break-all; display: inline-flex; align-items: center; gap: 6px;">
+                      <span>رابط المحاضرة</span>
+                      <span style="font-size: 0.85rem;">🔗</span>
+                  </a>
+                </h3>          
+              </div>
+            @empty
+              <p style="color: #888; font-size: 0.9rem; margin-top: 10px;">لم تقم بنشر أي محاضرات بعد.</p>
+            @endforelse
+          @endisset
         </div>
       </div>
     </section>
@@ -238,25 +351,27 @@
               </tr>
             </thead>
             <tbody id="studentsTable">
-              @foreach($teacherSubjects as $subject)
-                @foreach($subject->students as $student)
-                  @php $hasStudents = true; @endphp
-                  <tr>
-                    <td>{{ $student->name }}</td>
-                    <td>{{ $student->email }}</td>
-                    <td>{{ $subject->name }}</td>
-                    <td>
-                      <form action="{{ route('teacher.subjects.students.remove', ['subject' => $subject->id, 'student' => $student->id]) }}" method="POST">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn btn-sm" style="background-color: #dc3545; color: #fff; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer;">
-                          إلغاء التسجيل
-                        </button>
-                      </form>
-                    </td>
-                  </tr>
+              @isset($teacherSubjects)
+                @foreach($teacherSubjects as $subject)
+                  @foreach($subject->students as $student)
+                    @php $hasStudents = true; @endphp
+                    <tr>
+                      <td>{{ $student->name }}</td>
+                      <td>{{ $student->email }}</td>
+                      <td>{{ $subject->name }}</td>
+                      <td>
+                        <form action="{{ route('teacher.subjects.students.remove', ['subject' => $subject->id, 'student' => $student->id]) }}" method="POST">
+                          @csrf
+                          @method('DELETE')
+                          <button type="submit" class="btn btn-sm" style="background-color: #dc3545; color: #fff; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer;">
+                            إلغاء التسجيل
+                          </button>
+                        </form>
+                      </td>
+                    </tr>
+                  @endforeach
                 @endforeach
-              @endforeach
+              @endisset
             </tbody>
           </table>
         </div>
@@ -324,7 +439,18 @@
     event.currentTarget?.classList?.add('active');
   }
 
-  // تفعيل القائمة الجانبية للشاشات الصغيرة (الهواتف)
+  function toggleNotifications() {
+    const dropdown = document.getElementById('notificationDropdown');
+    dropdown.classList.toggle('active');
+  }
+
+  window.addEventListener('click', function(e) {
+    const container = document.querySelector('.notification-container');
+    if (container && !container.contains(e.target)) {
+      document.getElementById('notificationDropdown').classList.remove('active');
+    }
+  });
+
   const menuToggle = document.getElementById('menuToggle');
   const sidebar = document.getElementById('sidebar');
   const sidebarScrim = document.getElementById('sidebarScrim');

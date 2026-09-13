@@ -8,6 +8,7 @@ use App\Models\Lesson;
 use App\Models\Assignment;
 use App\Models\Subject;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 class ManagementController extends Controller
 {
@@ -52,7 +53,6 @@ class ManagementController extends Controller
         $data = [
             'name' => $request->name,
             'email' => $request->email,
-            'subject_id' => $request->subject_id,
         ];
 
         if ($request->filled('password')) {
@@ -64,7 +64,7 @@ class ManagementController extends Controller
         return redirect()->back()->with('success', 'تم تحديث بياناتك الشخصية بنجاح');
     }
 
-    // عرض قائمة جميع المستخدمين (مع إمكانية البحث أو الفرز لاحقاً)
+    // عرض قائمة جميع المستخدمين
     public function usersIndex()
     {
         $users = User::latest()->paginate(10);
@@ -74,9 +74,10 @@ class ManagementController extends Controller
     // عرض محاضرات واختبارات المعلم المحدد
     public function teacherContent($id)
     {
-        $teacher = User::findOrFail($id);
+        $teacher = User::where('role', 'teacher')->findOrFail($id);
         
-        // جلب محاضرات واختبارات هذا المعلم
+        Log::info("الإدارة (" . auth()->user()->name . ") قامت بعرض محتوى المعلم: {$teacher->name} (ID: {$teacher->id})");
+
         $lessons = Lesson::where('teacher_id', $teacher->id)->with('subject')->get();
         $assignments = Assignment::where('teacher_id', $teacher->id)->get();
 
@@ -87,8 +88,6 @@ class ManagementController extends Controller
     public function subjectStudents($id)
     {
         $subject = Subject::findOrFail($id);
-        
-        // جلب الطلاب المرتبطين بهذه المادة حصرياً
         $students = $subject->users()->where('role', 'student')->get();
 
         return view('management.subject-students', compact('subject', 'students'));
@@ -98,8 +97,6 @@ class ManagementController extends Controller
     public function removeStudentFromSubject($subjectId, $studentId)
     {
         $subject = Subject::findOrFail($subjectId);
-        
-        // إزالة الارتباط بين الطالب والمادة من جدول الربط
         $subject->users()->detach($studentId);
 
         return redirect()->back()->with('success', 'تم إزالة الطالب من المساق بنجاح');
@@ -116,7 +113,7 @@ class ManagementController extends Controller
             'subject_id' => 'nullable|exists:subjects,id',
         ]);
 
-        User::create([
+        $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
@@ -124,18 +121,30 @@ class ManagementController extends Controller
             'subject_id' => $request->subject_id,
         ]);
 
+        if ($request->role === 'teacher' && $request->filled('subject_id')) {
+            $user->subjects()->sync([$request->subject_id]);
+        }
+
+        Log::info("الإدارة (" . auth()->user()->name . ") قامت بإضافة {$request->role} جديد باسم: {$user->name} - الإيميل: {$user->email} (ID: {$user->id})");
+
         return redirect()->back()->with('success', 'تم إضافة المستخدم بنجاح');
     }
 
     // حذف المستخدم من النظام
     public function destroyUser(User $user)
     {
-        // حماية إضافية لعدم حذف الحساب الحالي أو حسابات حساسة عن طريق الخطأ إذا لزم الأمر
         if ($user->id === auth()->id()) {
             return redirect()->back()->with('error', 'لا يمكنك حذف حسابك الشخصي أثناء تسجيل الدخول.');
         }
 
+        $userName = $user->name;
+        $userId = $user->id;
+        $userRole = $user->role;
+
         $user->delete();
+
+        Log::warning("الإدارة (" . auth()->user()->name . ") قامت بحذف المستخدم [{$userRole}] المسمى: {$userName} (ID: {$userId})");
+
         return redirect()->back()->with('success', 'تم حذف المستخدم بنجاح');
     }
 
@@ -162,12 +171,13 @@ class ManagementController extends Controller
             'email' => $request->email,
         ];
 
-        // تحديث كلمة المرور فقط في حال أدخل الإداري قيمة جديدة لها
         if ($request->filled('password')) {
             $data['password'] = Hash::make($request->password);
         }
 
         $student->update($data);
+
+        Log::info("الإدارة (" . auth()->user()->name . ") قامت بتحديث بيانات الطالب: {$student->name} - الإيميل الجديد: {$student->email} (ID: {$student->id})");
 
         return redirect()->back()->with('success', 'تم تعديل بيانات الطالب بنجاح');
     }
@@ -196,6 +206,25 @@ class ManagementController extends Controller
 
         $user->update($data);
 
+        if ($user->role === 'teacher') {
+            if ($request->filled('subject_id')) {
+                $user->subjects()->sync([$request->subject_id]);
+            } else {
+                $user->subjects()->detach();
+            }
+        }
+
+        // تسجيل عملية التحديث مع إظهار الإيميل الجديد بوضوح
+        Log::info("الإدارة (" . auth()->user()->name . ") قامت بتحديث بيانات المستخدم: {$user->name} - الإيميل الجديد: {$user->email} (ID: {$user->id})");
+
         return redirect()->route('management.users.index')->with('success', 'تم تحديث بيانات المستخدم بنجاح');
+    }
+    // عرض قائمة جميع الطلاب في المركز مع المساقات المتاحة
+    public function allStudentsIndex()
+    {
+        $students = User::where('role', 'student')->with('subjects')->latest()->paginate(10);
+        $subjects = Subject::all();
+
+        return view('management.students.index', compact('students', 'subjects'));
     }
 }

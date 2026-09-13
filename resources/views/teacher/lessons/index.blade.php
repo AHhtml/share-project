@@ -135,6 +135,7 @@
           <h3 style="margin: 0; font-size: 1rem;">
               <a href="{{ $lesson->description }}" target="_blank" style="color: #0d6efd; text-decoration: none; word-break: break-all; display: inline-flex; align-items: center; gap: 6px;">
                   <span>{{ $lesson->description }}</span>
+                  {{-- <span>رابط المحاضرة</span> --}}
                   <span style="font-size: 0.85rem;">🔗</span>
               </a>
           </h3>

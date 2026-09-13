@@ -6,6 +6,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Models\Notification;
 
 class User extends Authenticatable
 {
@@ -56,10 +57,21 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Subject::class, 'subject_user', 'user_id', 'subject_id');
     }
+    
     public function subject()
-{
-    return $this->belongsTo(Subject::class, 'subject_id');
-}
+    {
+        return $this->belongsTo(Subject::class, 'subject_id');
+    }
+
+    public function customNotifications()
+    {
+        return $this->hasMany(Notification::class, 'user_id');
+    }
+
+    public function userNotifications()
+    {
+        return $this->hasMany(Notification::class, 'user_id');
+    }
 
     /**
      * Get the attributes that should be cast.

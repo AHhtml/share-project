@@ -7,6 +7,8 @@ use App\Models\Subject;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log; // استدعاء مكتبة الـ Log
+use App\Notifications\LoginNotification; // استدعاء إشعار تسجيل الدخول
 
 class AuthController extends Controller
 {
@@ -19,20 +21,39 @@ class AuthController extends Controller
     // معالجة تسجيل الدخول
     public function login(Request $request)
     {
-        $credentials = $request->validate([
-            'email'    => ['required', 'email'],
-            'password' => ['required'],
-        ]);
+        try {
+            $credentials = $request->validate([
+                'email'    => ['required', 'email'],
+                'password' => ['required'],
+            ]);
 
-        if (Auth::attempt($credentials, $request->boolean('remember'))) {
-            $request->session()->regenerate();
+            if (Auth::attempt($credentials, $request->boolean('remember'))) {
+                $request->session()->regenerate();
+                
+                $user = Auth::user();
 
-            return $this->redirectBasedOnRole(Auth::user());
+                // إرسال إشعار الأمان عند تسجيل الدخول الناجح
+                $user->notify(new LoginNotification());
+
+                // تسجيل عملية الدخول الناجحة في ملفات الـ Logs
+                // Log::info('تم تسجيل الدخول بنجاح للمستخدم: ' . $user->email . ' (ID: ' . $user->id . ')');
+                Log::info('تم تسجيل الدخول بنجاح للمستخدم: ' . $user->name . ' - الإيميل: ' . $user->email  . ' (ID: ' . $user->id . ')');
+                // Log::info('تم تسجيل الدخول بنجاح للمستخدم: ' . $user->name . ' - الإيميل: ' . $user->email . ' (ID: ' . $user->id . ')');
+
+                return $this->redirectBasedOnRole($user);
+            }
+
+            // تسجيل محاولة دخول فاشلة في الـ Logs لأسباب أمنية
+            Log::warning('محاولة تسجيل دخول فاشلة للبريد الإلكتروني: ' . $request->email);
+
+            return back()->withErrors([
+                'email' => 'بيانات الدخول غير صحيحة.',
+            ])->onlyInput('email');
+
+        } catch (\Exception $e) {
+            Log::error('حدث خطأ أثناء محاولة تسجيل الدخول | الخطأ: ' . $e->getMessage());
+            return back()->withErrors(['email' => 'حدث خطأ ما، يرجى المحاولة لاحقاً.']);
         }
-
-        return back()->withErrors([
-            'email' => 'بيانات الدخول غير صحيحة.',
-        ])->onlyInput('email');
     }
 
     // عرض صفحة إنشاء حساب جديد
@@ -44,52 +65,68 @@ class AuthController extends Controller
     // معالجة إنشاء حساب جديد
     public function register(Request $request)
     {
-        $validated = $request->validate([
-            'name'          => ['required', 'string', 'max:255'],
-            'email'         => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'phone'         => ['nullable', 'string', 'max:20'],
-            'branch'        => ['nullable', 'string'],
-            'role'          => ['required', 'string', 'in:admin,teacher,management,student'],
-            'subject_id'    => ['nullable', 'exists:subjects,id'], // مادة المعلم
-            'subject_ids'   => ['nullable', 'array'],              // مواد الطالب المتعددة
-            'subject_ids.*' => ['exists:subjects,id'],
-            'password'      => ['required', 'string', 'min:6', 'confirmed'],
-        ]);
+        try {
+            $validated = $request->validate([
+                'name'          => ['required', 'string', 'max:255'],
+                'email'         => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+                'phone'         => ['nullable', 'string', 'max:20'],
+                'branch'        => ['nullable', 'string'],
+                'role'          => ['required', 'string', 'in:admin,teacher,management,student'],
+                'subject_id'    => ['nullable', 'exists:subjects,id'], // مادة المعلم
+                'subject_ids'   => ['nullable', 'array'],              // مواد الطالب المتعددة
+                'subject_ids.*' => ['exists:subjects,id'],
+                'password'      => ['required', 'string', 'min:6', 'confirmed'],
+            ]);
 
-        // إنشاء المستخدم مع حفظ الـ subject_id مباشرة في جدول users
-        $user = User::create([
-            'name'       => $validated['name'],
-            'email'      => $validated['email'],
-            'phone'      => $validated['phone'] ?? null,
-            'branch'     => $validated['branch'] ?? null,
-            'role'       => $validated['role'],
-            'subject_id' => $validated['role'] === 'teacher' ? ($validated['subject_id'] ?? null) : null,
-            'password'   => Hash::make($validated['password']),
-        ]);
+            // إنشاء المستخدم مع حفظ الـ subject_id مباشرة في جدول users
+            $user = User::create([
+                'name'       => $validated['name'],
+                'email'      => $validated['email'],
+                'phone'      => $validated['phone'] ?? null,
+                'branch'     => $validated['branch'] ?? null,
+                'role'       => $validated['role'],
+                'subject_id' => $validated['role'] === 'teacher' ? ($validated['subject_id'] ?? null) : null,
+                'password'   => Hash::make($validated['password']),
+            ]);
 
-        // 1. إذا كان الدور معلماً وتم تحديد مادة، يتم ربطها عبر الجدول الوسيط أيضاً
-        if ($user->role === 'teacher' && !empty($validated['subject_id'])) {
-            $user->subjects()->sync([$validated['subject_id']]);
+            // 1. إذا كان الدور معلماً وتم تحديد مادة، يتم ربطها عبر الجدول الوسيط أيضاً
+            if ($user->role === 'teacher' && !empty($validated['subject_id'])) {
+                $user->subjects()->sync([$validated['subject_id']]);
+            }
+
+            // 2. إذا كان الدور طالباً وتم تحديد مواد، يتم ربط الطالب بالمواد في الجدول الوسيط
+            if ($user->role === 'student' && !empty($validated['subject_ids'])) {
+                $user->subjects()->attach($validated['subject_ids']);
+            }
+
+            // إرسال إشعار تسجيل الدخول للحساب الجديد
+            $user->notify(new LoginNotification());
+
+            // تسجيل عملية التسجيل في الـ Logs
+            Log::info('تم إنشاء حساب جديد بنجاح للمستخدم: ' . $user->email . ' برتبة: ' . $user->role);
+
+            // تسجيل الدخول مباشرة
+            Auth::login($user);
+
+            // التوجيه للوحة التحكم المناسبة
+            return $this->redirectBasedOnRole($user);
+
+        } catch (\Exception $e) {
+            Log::error('فشل في إنشاء الحساب الجديد | الخطأ: ' . $e->getMessage());
+            return back()->with('error', 'حدث خطأ ما أثناء إنشاء الحساب.')->withInput();
         }
-
-        // 2. إذا كان الدور طالباً وتم تحديد مواد، يتم ربط الطالب بالمواد في الجدول الوسيط
-        if ($user->role === 'student' && !empty($validated['subject_ids'])) {
-            $user->subjects()->attach($validated['subject_ids']);
-        }
-
-        // تسجيل الدخول مباشرة
-        Auth::login($user);
-
-        // التوجيه للوحة التحكم المناسبة
-        return $this->redirectBasedOnRole($user);
     }
 
     // تسجيل الخروج
     public function logout(Request $request)
     {
+        $userId = Auth::id();
+        
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
+        Log::info('تم تسجيل الخروج للمستخدم ID: ' . $userId);
 
         return redirect()->route('login');
     }
