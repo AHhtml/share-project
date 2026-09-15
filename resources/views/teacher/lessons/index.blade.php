@@ -120,6 +120,10 @@
       <p>إدارة واستعراض جميع المحاضرات الخاصة بك في المنصة.</p>
     </div>
     <a href="{{ route('teacher.lessons.create') }}" class="btn btn-primary" style="padding: 10px 20px; text-decoration: none;">+ إضافة محاضرة جديدة</a>
+    <!-- زر سلة المهملات/الأرشيف -->
+    <a href="{{ route('teacher.lessons.trash') }}" style="background: #64748b; color: #fff; padding: 10px 18px; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
+        🗑️ سلة المهملات
+    </a>
   </div>
 
   <!-- قائمة المحاضرات -->

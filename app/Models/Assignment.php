@@ -45,4 +45,8 @@ class Assignment extends Model
     {
         return $this->hasMany(Submission::class);
     }
+    public function subject()
+        {
+            return $this->belongsTo(Subject::class);
+        }       
 }

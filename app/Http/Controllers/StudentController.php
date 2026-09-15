@@ -9,7 +9,7 @@ use App\Models\Submission;
 use App\Models\Announcement;
 use App\Models\User;
 use App\Models\Subject;
-use App\Models\Notification; // استدعاء موديل الإشعارات
+use App\Models\Notification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -26,7 +26,6 @@ class StudentController extends Controller
 
         $lessonsCount = Lesson::whereIn('subject_id', $enrolledSubjects->pluck('id'))->count();
         $assignmentsCount = Assignment::whereIn('subject_id', $enrolledSubjects->pluck('id'))->count();
-        // $completedExamsCount = Submission::where('student_id', $user->id)->count();
         $completedExamsCount = Submission::where('user_id', $user->id)->count();
 
         $latestLessons = Lesson::whereIn('subject_id', $enrolledSubjects->pluck('id'))
@@ -35,7 +34,6 @@ class StudentController extends Controller
             ->take(5)
             ->get();
 
-        // جلب الإعلانات الخاصة بمواد الطالب أو العامة
         $subjectIds = $user->subjects()->pluck('subjects.id');
         $announcements = Announcement::whereIn('subject_id', $subjectIds)
             ->orWhereNull('subject_id')
@@ -50,6 +48,17 @@ class StudentController extends Controller
             'latestLessons',
             'announcements'
         ));
+    }
+
+    // عرض تفاصيل مادة محددة للطالب
+    public function showSubject($id)
+    {
+        $user = Auth::user();
+        
+        // التحقق أن الطالب مسجل في هذه المادة فعلياً
+        $subject = $user->enrolledSubjects()->with(['lessons', 'assignments'])->findOrFail($id);
+
+        return view('student.show', compact('subject'));
     }
 
     // عرض قائمة الطلاب (للمعلم)
@@ -205,46 +214,52 @@ class StudentController extends Controller
     // جلب المحاضرات بصيغة JSON
     public function getLessons()
     {
-        $lessons = Lesson::with('user')->latest()->get();
+        $lessons = Lesson::with('teacher')->latest()->get();
         return response()->json($lessons);
     }
 
     // جلب الواجبات بصيغة JSON
     public function getAssignments()
     {
-        $assignments = Assignment::with('user')->latest()->get();
+        $assignments = Assignment::with('teacher')->latest()->get();
         return response()->json($assignments);
     }
 
-    // عرض صفحة المحاضرات للطالب
-    public function lessonsIndex()
+    // عرض صفحة المحاضرات للطالب (متوافقة مع الراوت lessons)
+    public function lessons()
     {
-        $lessons = Lesson::with('teacher')->latest()->get();
-        return view('student.lessons', compact('lessons'));
+        $user = Auth::user();
+        $enrolledSubjects = $user->enrolledSubjects;
+        $subjectIds = $enrolledSubjects->pluck('id');
+        
+        $lessons = Lesson::whereIn('subject_id', $subjectIds)->with(['subject', 'teacher'])->latest()->get();
+
+        return view('student.lessons', compact('enrolledSubjects', 'lessons'));
     }
 
     // عرض صفحة الواجبات والاختبارات للطالب
-    public function assignmentsIndex()
+    public function assignments()
     {
-        $assignments = Assignment::with('teacher')->latest()->get();
         $user = Auth::user();
-        
-        $submittedAssignmentIds = Submission::where('student_id', $user->id)->pluck('assignment_id')->toArray();
+        $enrolledSubjects = $user->enrolledSubjects;
+        $subjectIds = $enrolledSubjects->pluck('id');
+
+        $assignments = Assignment::whereIn('subject_id', $subjectIds)->with(['subject', 'teacher'])->latest()->get();
+        $submittedAssignmentIds = Submission::where('user_id', $user->id)->pluck('assignment_id')->toArray();
 
         return view('student.assignments', compact('assignments', 'submittedAssignmentIds'));
     }
 
     // عرض صفحة الإعلانات للطالب
-    public function announcementsIndex()
+    public function announcements()
     {
-        $student = auth()->user();
-        
+        $student = Auth::user();
         $subjectIds = $student->subjects()->pluck('subjects.id');
 
         $announcements = Announcement::whereIn('subject_id', $subjectIds)
-                                   ->orWhereNull('subject_id')
-                                   ->latest()
-                                   ->get();
+            ->orWhereNull('subject_id')
+            ->latest()
+            ->get();
 
         return view('student.announcements', compact('announcements'));
     }
@@ -253,7 +268,7 @@ class StudentController extends Controller
     {
         $assignment = Assignment::findOrFail($id);
         
-        if (!$assignment->file || !\Storage::disk('public')->exists($assignment->file)) {
+        if (!$assignment->file || !Storage::disk('public')->exists($assignment->file)) {
             return back()->with('error', 'الملف غير موجود.');
         }
 
@@ -261,19 +276,19 @@ class StudentController extends Controller
     }
 
     // دالة تسليم حل الاختبار أو الواجب من قبل الطالب
-    public function storeSubmission(Request $request, $id)
+    public function submitAssignment(Request $request, $id)
     {
         $request->validate([
-            'file'  => ['required', 'file', 'mimes:pdf,doc,docx,zip,png,jpg,jpeg', 'max:10240'],
-            'notes' => ['nullable', 'string'],
+            'solution_file' => ['required', 'file', 'mimes:pdf,doc,docx,zip,png,jpg,jpeg', 'max:10240'],
+            'notes'         => ['nullable', 'string'],
         ]);
 
-        $filePath = $request->file('file')->store('submissions', 'public');
+        $filePath = $request->file('solution_file')->store('submissions', 'public');
 
         Submission::updateOrCreate(
             [
                 'assignment_id' => $id,
-                'student_id'    => Auth::id(),
+                'user_id'       => Auth::id(),
             ],
             [
                 'solution_file' => $filePath,
@@ -282,6 +297,34 @@ class StudentController extends Controller
             ]
         );
 
-        return back()->with('success', 'تم تسليم حل الاختبار بنجاح.');
+        return back()->with('success', 'تم تسليم حل الواجب/الاختبار بنجاح.');
+    }
+    // عرض صفحة تعديل الملف الشخصي للطالب
+    public function editProfile()
+    {
+        $user = Auth::user();
+        return view('student.profile.edit', compact('user'));
+    }
+    // معالجة تحديث الملف الشخصي للطالب
+    public function updateProfile(Request $request)
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $user->id,
+            'password' => 'nullable|min:6|confirmed',
+        ]);
+
+        $user->name = $request->name;
+        $user->email = $request->email;
+        
+        if ($request->filled('password')) {
+            $user->password = Hash::make($request->password);
+        }
+
+        $user->save();
+
+        return redirect()->back()->with('success', 'تم تحديث البيانات الشخصية بنجاح.');
     }
 }

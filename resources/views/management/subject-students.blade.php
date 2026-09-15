@@ -73,6 +73,34 @@
             font-weight: 500;
         }
 
+        /* أجراءات الرأس (زر الإضافة والعودة) */
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* زر إضافة طالب للمساق */
+        .btn-add-student {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: var(--primary-color);
+            color: #ffffff;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+
+        .btn-add-student:hover {
+            opacity: 0.9;
+            color: #ffffff;
+        }
+
         /* زر العودة */
         .btn-back {
             display: inline-flex;
@@ -221,10 +249,16 @@
                 </h1>
                 <p>قائمة الطلاب المسجلين رسمياً في هذا المساق الأكاديمي.</p>
             </div>
-            <!-- زر العودة لصفحة المساقات أو لوحة التحكم -->
-           <a href="{{ route('management.dashboard') }}" class="btn-back">
-                <span>←</span> عودة
-            </a>
+            
+            <!-- أزرار الترويسة (إضافة طالب + العودة) -->
+            <div class="header-actions">
+                <a href="{{ route('management.subjects.students.create', $subject->id) }}" class="btn-add-student">
+                    ➕ إضافة طالب للمساق
+                </a>
+                <a href="{{ route('management.dashboard') }}" class="btn-back">
+                    <span>←</span> عودة
+                </a>
+            </div>
         </div>
 
         <!-- محتوى الجدول -->

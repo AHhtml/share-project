@@ -70,6 +70,44 @@
             border: 1px solid var(--border-color);
         }
 
+        /* تنسيق قسم الصورة الشخصية بعد التعديل */
+        .profile-image-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--primary-color);
+            background-color: var(--primary-light);
+            flex-shrink: 0;
+        }
+
+        .profile-avatar-placeholder {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            border: 2px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .profile-image-details {
+            flex-grow: 1;
+        }
+
         .form-group {
             margin-bottom: 20px;
         }
@@ -95,6 +133,12 @@
 
         .form-control:focus {
             border-color: var(--primary-color);
+        }
+
+        input[type="file"].form-control {
+            padding: 9px 16px;
+            background: #fff;
+            cursor: pointer;
         }
 
         .btn-submit {
@@ -139,9 +183,23 @@
                 </div>
             @endif
 
-            <form action="{{ route('management.profile') }}" method="POST">
+            <form action="{{ route('management.profile') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
+
+                <!-- قسم الصورة الشخصية (الصورة يميناً والنصوص يساراً) -->
+                <div class="profile-image-section">
+                    @if(!empty($user->avatar))
+                        <img src="{{ asset('storage/' . $user->avatar) }}" alt="الصورة الشخصية" class="profile-avatar">
+                    @else
+                        <div class="profile-avatar-placeholder">👤</div>
+                    @endif
+                    <div class="profile-image-details">
+                        <label style="margin-bottom: 4px;">الصورة الشخصية</label>
+                        <p style="margin: 0 0 8px 0; font-size: 0.85rem; color: var(--text-muted);">قم بتحديد صورة بصيغة JPG أو PNG</p>
+                        <input type="file" name="avatar" class="form-control" accept="image/*" style="font-size: 0.85rem; padding: 6px;">
+                    </div>
+                </div>
 
                 <div class="form-group">
                     <label>الاسم الكامل</label>
@@ -154,7 +212,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>كلمة المرور الجديدة (اتركها فارغة إذا لمغن رغبت بتغييرها)</label>
+                    <label>كلمة المرور الجديدة (اتركها فارغة إذا لم تكن رغبت بتغييرها)</label>
                     <input type="password" name="password" class="form-control" placeholder="••••••••">
                 </div>
 

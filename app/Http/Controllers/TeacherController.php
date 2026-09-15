@@ -12,6 +12,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class TeacherController extends Controller
 {
@@ -119,16 +121,18 @@ class TeacherController extends Controller
     }
 
     /**
-     * تحديث بيانات الملف الشخصي للمعلم مع إنشاء إشعار خاص به
+     * تحديث بيانات الملف الشخصي للمعلم مع الصورة الشخصية وإنشاء إشعار خاص
      */
     public function updateProfile(Request $request)
     {
         $user = Auth::user();
 
+        // 1. التحقق من صحة البيانات المدخلة ومن ضمنها الصورة الشخصية
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
             'password' => 'nullable|min:6',
+            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
         $data = [
@@ -140,6 +144,22 @@ class TeacherController extends Controller
             $data['password'] = Hash::make($request->password);
         }
 
+        // 2. معالجة وتخزين الصورة الشخصية الجديدة (مع إدارة دورة حياة الملف)
+        if ($request->hasFile('avatar')) {
+            // حذف الصورة القديمة لمنع تراكم الملفات غير المستخدمة وهدر المساحة
+            if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+
+            // توليد اسم فريد وآمن للملف باستخدام UUID
+            $file = $request->file('avatar');
+            $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+            
+            // تخزين الملف في مجلد avatars داخل قرص التخزين العام (storage/app/public/avatars)
+            $data['avatar'] = $file->storeAs('avatars', $filename, 'public');
+        }
+
+        // 3. تحديث بيانات المستخدم في قاعدة البيانات
         $user->update($data);
 
         // إنشاء إشعار للمعلم بتحديث بيانات ملفه الشخصي

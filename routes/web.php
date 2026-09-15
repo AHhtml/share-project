@@ -64,7 +64,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/users/{id}', [ManagementController::class, 'update'])->name('users.update');
         Route::delete('/users/{id}', [ManagementController::class, 'destroyUser'])->name('users.destroy');
 
-        // مسارات عرض وإدارة جميع طلاب المركز (المضاف حديثاً)
+        // مسارات عرض وإدارة جميع طلاب المركز
         Route::get('/students', [ManagementController::class, 'allStudentsIndex'])->name('students.index');
 
         // مسارات تعديل الطالب
@@ -77,6 +77,10 @@ Route::middleware('auth')->group(function () {
         // مسار عرض الطلاب المسجلين في مادة معينة
         Route::get('/subjects/{id}/students', [ManagementController::class, 'subjectStudents'])->name('subjects.students');
         
+        // مسارات إضافة طالب إلى مساق معين
+        Route::get('/subjects/{id}/students/create', [ManagementController::class, 'createSubjectStudent'])->name('subjects.students.create');
+        Route::post('/subjects/{id}/students', [ManagementController::class, 'storeSubjectStudent'])->name('subjects.students.store');
+
         // مسار إزالة الطالب من المساق
         Route::delete('/subjects/{subject}/students/{student}', [ManagementController::class, 'removeStudentFromSubject'])->name('subjects.students.destroy');
         
@@ -98,7 +102,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/announcements', [TeacherController::class, 'announcementsStore'])->name('announcements.store');
         Route::delete('/announcements/{id}', [TeacherController::class, 'destroyAnnouncement'])->name('announcements.destroy');
 
-        // إدارة الطلاب (عرض، إضافة، وحذف الطلاب)
+        // إدارة الطلاب
         Route::get('/students', [StudentController::class, 'index'])->name('students.index');
         Route::get('/students/create', [StudentController::class, 'create'])->name('students.create');
         Route::post('/students', [StudentController::class, 'store'])->name('students.store');
@@ -107,7 +111,12 @@ Route::middleware('auth')->group(function () {
         // إلغاء تسجيل طالب من المادة
         Route::delete('/subjects/{subject}/students/{student}', [StudentController::class, 'removeStudent'])->name('subjects.students.remove');
         
-        // المحاضرات
+        // المحاضرات (الأرشيف، الاستعادة، والحذف النهائي وتفريغ السلة)
+        Route::get('/lessons/trash', [LessonController::class, 'trash'])->name('lessons.trash');
+        Route::patch('/lessons/{id}/restore', [LessonController::class, 'restore'])->name('lessons.restore');
+        Route::delete('/lessons/{id}/force-delete', [LessonController::class, 'forceDelete'])->name('lessons.forceDelete');
+        Route::delete('/lessons/empty-trash', [LessonController::class, 'emptyTrash'])->name('lessons.emptyTrash');
+
         Route::get('/lessons', [LessonController::class, 'index'])->name('lessons.index');
         Route::get('/lessons/create', [LessonController::class, 'create'])->name('lessons.create');
         Route::post('/lessons', [LessonController::class, 'store'])->name('lessons.store');
@@ -128,32 +137,31 @@ Route::middleware('auth')->group(function () {
         Route::get('/submissions/{id}/download', [AssignmentController::class, 'downloadSubmission'])->name('submissions.download');
     });
 
-    // 4. لوحة تحكم الطالب
+    // 4. لوحة تحكم الطالب (مُحدثة لدعم الصفحات المستقلة ومسارات المواد)
     Route::middleware('role:student')->prefix('student')->name('student.')->group(function () {
         Route::get('/dashboard', [StudentController::class, 'dashboard'])->name('dashboard');
         
-        // تعديل البيانات الشخصية للطالب
-        Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
-        Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+        // عرض تفاصيل مادة معينة للطالب
+        Route::get('/subjects/{id}', [StudentController::class, 'showSubject'])->name('subject.show');
+
+        // تعديل البيانات الشخصية للطالب (تم دمج المسارات لتتوافق مع Controller والـ View)
+        Route::get('/profile', [StudentController::class, 'editProfile'])->name('profile.edit');
+        Route::patch('/profile', [StudentController::class, 'updateProfile'])->name('profile.update');
 
         // واجهات Blade المستقلة للطالب
-        Route::get('/lessons', [StudentController::class, 'lessonsIndex'])->name('lessons.index');
-        Route::get('/assignments', [StudentController::class, 'assignmentsIndex'])->name('assignments.index');
+        Route::get('/lessons', [StudentController::class, 'lessons'])->name('lessons');
+        Route::get('/assignments', [StudentController::class, 'assignments'])->name('assignments');
         
         // مسار تحميل ملف الواجب/الاختبار
         Route::get('/assignments/{id}/download', [AssignmentController::class, 'download'])->name('assignments.download');
 
         // مسار إرسال وتسليم حل الواجب/الاختبار من الطالب
-        Route::post('/assignments/{id}/submit', [StudentController::class, 'storeSubmission'])->name('assignments.submit');
+        Route::post('/assignments/{id}/submit', [StudentController::class, 'submitAssignment'])->name('assignments.submit');
 
         // مسار إعلانات الطالب
-        Route::get('/announcements', [StudentController::class, 'announcementsIndex'])->name('announcements.index');
+        Route::get('/announcements', [StudentController::class, 'announcements'])->name('announcements');
 
         // مسار حذف الإشعارات للطالب
         Route::delete('/notifications/{id}', [StudentController::class, 'destroyNotification'])->name('notifications.destroy');
-
-        // جلب البيانات (AJAX)
-        Route::get('/api/lessons', [StudentController::class, 'getLessons'])->name('lessons.json');
-        Route::get('/api/assignments', [StudentController::class, 'getAssignments'])->name('assignments.json');
     });
 });

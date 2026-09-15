@@ -20,6 +20,7 @@ class User extends Authenticatable
         'branch',
         'role',
         'subject_id', // إضافة هذا الحقل ليكون قابل للتعبئة
+        'avatar',
     ];
 
     protected $hidden = [

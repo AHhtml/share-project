@@ -4,13 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>لوحة الطالب — منارة</title>
-<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@450;500;700;900&display=swap" rel="stylesheet">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <link rel="stylesheet" href="{{ asset('css/tokens.css') }}">
 <link rel="stylesheet" href="{{ asset('css/base.css') }}">
 <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
 <style>
-  /* تنسيق القائمة المنسدلة الفرعية للمواد */
+  body { font-family: 'Tajawal', sans-serif; background: #f8fafc; color: #1e293b; margin: 0; }
+  
+  /* القائمة المنسدلة للمواد */
   .sub-menu {
     max-height: 0;
     overflow: hidden;
@@ -23,75 +25,212 @@
     transition: max-height 0.3s ease-in;
   }
   .sub-menu a {
-    font-size: 0.9rem !important;
+    font-size: 0.88rem !important;
     padding: 8px 12px !important;
     opacity: 0.85;
   }
-  .sub-menu a:hover {
-    opacity: 1;
+  .sub-menu a:hover { opacity: 1; }
+
+  /* الشريط العلوي والإشعارات */
+  .top-header {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 16px 32px;
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
   }
-  /* تنسيق أيقونة الإشعارات العلوية */
   .topbar-notifications {
     position: relative;
     display: inline-block;
   }
+  .notification-btn {
+    background: #f1f5f9;
+    border: none;
+    padding: 8px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.1rem;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    transition: background 0.2s;
+  }
+  .notification-btn:hover { background: #e2e8f0; }
+  .notification-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: #ef4444;
+    color: #fff;
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: bold;
+  }
   .notifications-dropdown {
     position: absolute;
-    right: 0;
-    top: 45px;
+    left: 0;
+    top: 50px;
     width: 320px;
     background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    border-radius: 12px;
+    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
     display: none;
     z-index: 1000;
     border: 1px solid #e2e8f0;
     text-align: right;
+    overflow: hidden;
   }
-  .notifications-dropdown.show {
-    display: block;
-  }
+  .notifications-dropdown.show { display: block; }
   .notifications-header {
-    padding: 12px 16px;
+    padding: 14px 18px;
     border-bottom: 1px solid #e2e8f0;
-    font-weight: bold;
-    font-size: 0.95rem;
-    color: #1e293b;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #0f172a;
     background: #f8fafc;
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
   }
   .notifications-body {
-    max-height: 300px;
+    max-height: 280px;
     overflow-y: auto;
   }
   .notification-item {
-    padding: 12px 16px;
+    padding: 12px 18px;
     border-bottom: 1px solid #f1f5f9;
     font-size: 0.85rem;
     color: #334155;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 8px;
-    position: relative;
+    display: block;
     text-decoration: none;
     transition: background 0.2s;
   }
-  .notification-item:hover {
+  .notification-item:hover { background: #f8fafc; }
+
+  /* تصميم لوحة الترحيب الحديثة */
+  .welcome-banner {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #ffffff;
+    padding: 32px;
+    border-radius: 16px;
+    margin-bottom: 30px;
+    box-shadow: 0 10px 20px -5px rgba(15, 23, 42, 0.15);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .welcome-banner h1 {
+    font-size: 1.8rem;
+    font-weight: 900;
+    margin: 0 0 8px 0;
+    color: #ffffff;
+  }
+  .welcome-banner p {
+    color: #94a3b8;
+    font-size: 0.95rem;
+    margin: 0;
+  }
+
+  /* شبكة كروت المواد */
+  .subjects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+  }
+  .subject-card {
+    background: #ffffff;
+    border-radius: 14px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -2px rgba(0,0,0,0.02);
+    border: 1px solid #e2e8f0;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.3s ease;
+  }
+  .subject-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 20px -3px rgba(0,0,0,0.07);
+    border-color: #cbd5e1;
+  }
+  .subject-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 8px;
+  }
+  .subject-desc {
+    font-size: 0.88rem;
+    color: #64748b;
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+  
+  /* عدادات المادة */
+  .subject-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
     background: #f8fafc;
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    text-align: center;
+    border: 1px solid #f1f5f9;
+  }
+  .stat-item span {
+    display: block;
+    color: #64748b;
+    font-size: 0.75rem;
+    margin-bottom: 2px;
+  }
+  .stat-item strong {
+    color: #0f172a;
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+
+  /* زر دخول المادة */
+  .btn-enter {
+    display: block;
+    text-align: center;
+    background: #0f172a;
+    color: #fff;
+    padding: 12px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: background 0.2s;
+  }
+  .btn-enter:hover {
+    background: #1e293b;
+  }
+
+  .empty-state {
+    background: #ffffff;
+    padding: 48px;
+    border-radius: 14px;
+    grid-column: 1 / -1;
+    text-align: center;
+    color: #64748b;
+    border: 2px dashed #cbd5e1;
+    font-size: 0.95rem;
   }
 </style>
+@stack('styles')
 </head>
 <body data-home="{{ url('/') }}" data-login="{{ route('login') }}">
 
-<!-- تعريف كائن Manara في البداية قبل تحميل أي سكربت خارجي يطلبه لضمان عدم حدوث خطأ undefined -->
 <script>
   window.Manara = window.Manara || {
     currentUser: {
-      id: {{ Auth::id() }},
-      name: "{{ Auth::user()->name }}",
-      email: "{{ Auth::user()->email }}"
+      id: {{ Auth::id() ?? 'null' }},
+      name: "{{ Auth::user()->name ?? '' }}",
+      email: "{{ Auth::user()->email ?? '' }}"
     }
   };
 </script>
@@ -104,23 +243,24 @@
 <div class="sidebar-scrim" id="sidebarScrim"></div>
 
 <div class="app-shell">
+  <!-- القائمة الجانبية -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
       <h2>منارة</h2>
       <span>لوحة الطالب</span>
     </div>
+    
     <nav class="sidebar-nav">
-      <a href="#" class="active" data-target="overview" onclick="showOverviewSection()">🏠 الرئيسية</a>
+      <a href="{{ route('student.dashboard') }}" class="{{ request()->routeIs('student.dashboard') ? 'active' : '' }}">🏠 الرئيسية</a>
       
-      <!-- خيار المواد المسجلة -->
       <a href="#" id="toggleSubjectsMenu" onclick="toggleSubMenu(event)" style="display: flex; justify-content: space-between; align-items: center;">
         <span>📖 المواد المسجلة</span>
         <span id="menuArrow" style="font-size: 0.8rem; transition: transform 0.3s;">▼</span>
       </a>
       
-      <div class="sub-menu" id="subjectsSubMenu">
-        @forelse($enrolledSubjects as $subject)
-          <a href="" onclick="goToSubjectView('{{ $subject->name }}', {{ json_encode($subject->lessons) }}, {{ json_encode($subject->assignments) }})" style="display: block; text-decoration: none; color: inherit;">
+      <div class="sub-menu {{ request()->routeIs('student.subject.*') ? 'open' : '' }}" id="subjectsSubMenu">
+        @forelse($enrolledSubjects ?? [] as $subject)
+          <a href="{{ route('student.subject.show', $subject->id) }}" style="display: block; text-decoration: none; color: inherit;" class="{{ request()->is('student/subjects/' . $subject->id) ? 'active' : '' }}">
             ▪ {{ $subject->name }}
           </a>
         @empty
@@ -128,13 +268,17 @@
         @endforelse
       </div>
 
-      <a href="{{ route('student.announcements.index') }}" data-target="announcements" onclick="showSection(event, 'announcements')">📢 الإعلانات</a>
+      <a href="{{ route('student.lessons') }}" class="{{ request()->routeIs('student.lessons') ? 'active' : '' }}">🎥 المحاضرات</a>
+      <a href="{{ route('student.assignments') }}" class="{{ request()->routeIs('student.assignments') ? 'active' : '' }}">📝 الاختبارات</a>
+      <a href="{{ route('student.announcements') }}" class="{{ request()->routeIs('student.announcements') ? 'active' : '' }}">📢 الإعلانات</a>
       
-      <!-- زر تعديل البيانات الشخصية -->
-      <a href="#" onclick="showSection(event, 'profile')">⚙️ تعديل بياناتي الشخصية</a>
+      @if (Route::has('student.profile.edit'))
+        <a href="{{ route('student.profile.edit') }}" class="{{ request()->routeIs('student.profile.*') ? 'active' : '' }}">⚙️ تعديل بياناتي الشخصية</a>
+      @endif
     </nav>
+
     <div style="padding: 20px; border-top: 1px solid rgba(0,0,0,0.05); margin-top: auto;">
-      <p style="margin-bottom: 10px; font-weight: bold; font-size: 0.9rem;">{{ Auth::user()->name }}</p>
+      <p style="margin-bottom: 10px; font-weight: bold; font-size: 0.9rem;">{{ Auth::user()->name ?? '' }}</p>
       <form action="{{ route('logout') }}" method="POST">
         @csrf
         <button type="submit" class="btn btn-primary" style="width: 100%; background-color: #dc3545; border: none;">تسجيل الخروج</button>
@@ -142,268 +286,102 @@
     </div>
   </aside>
 
-  <main class="main">
+  <!-- محتوى الصفحة الرئيسي -->
+  <main class="main" style="display: flex; flex-direction: column; width: 100%;">
+    
 
-    @if(session('success'))
-      <div style="background: #dcfce7; color: #166534; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 0.9rem;">
-        {{ session('success') }}
-      </div>
-    @endif
-
-    @if(session('error'))
-      <div style="background: #fee2e2; color: #991b1b; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 0.9rem;">
-        {{ session('error') }}
-      </div>
-    @endif
-
-    <!-- ===== الرئيسية ===== -->
-    <section data-section="overview">
-      <div class="main-head">
-        <div>
-          <h1>مرحباً بك، {{ Auth::user()->name }}</h1>
+    <!-- المحتوى الداخلي -->
+    <div style="padding: 32px; flex: 1;">
+      @if(session('success'))
+        <div style="background: #dcfce7; color: #166534; padding: 14px 18px; border-radius: 10px; margin-bottom: 24px; font-size: 0.9rem; border: 1px solid #bbf7d0;">
+          {{ session('success') }}
         </div>
-        <!-- الهيدر العلوي وفيه زر الإشعارات -->
-        <div style="display: flex; justify-content: flex-start; align-items: center; gap: 20px; margin-bottom: 20px; position: relative;">
-          <div class="topbar-notifications">
-            <button onclick="toggleNotificationsDropdown(event)" class="btn btn-ghost" style="position: relative; background: #fff; border: 1px solid #cbd5e1; border-radius: 50%; width: 42px; height: 42px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
-              🔔
-              @php $unreadCount = \App\Models\Notification::where('user_id', Auth::id())->where('is_read', false)->count(); @endphp
-              @if($unreadCount > 0)
-                <span style="position: absolute; top: -2px; left: -2px; background: #dc3545; color: #fff; border-radius: 50%; width: 18px; height: 18px; font-size: 0.65rem; display: flex; align-items: center; justify-content: center; font-weight: bold;">{{ $unreadCount }}</span>
-              @endif
-            </button>
+      @endif
 
-            <div id="notificationsDropdown" class="notifications-dropdown">
-              <div class="notifications-header">الإشعارات</div>
-              <div class="notifications-body">
-                @forelse(\App\Models\Notification::where('user_id', Auth::id())->latest()->get() as $notification)
-                  <div class="notification-item">
-                    <div>
-                      <p style="margin: 0; font-weight: 500;">{{ $notification->message }}</p>
-                      <span style="font-size: 0.7rem; color: #64748b; margin-top: 20px; display: block;">{{ $notification->created_at->diffForHumans() }}</span>
-                    </div>
-                    
-                    <!-- زر/علامة الحذف -->
-                    <form action="{{ route('student.notifications.destroy', $notification->id) }}" method="POST" style="margin: 0;">
-                      @csrf
-                      @method('DELETE')
-                      <button type="submit" style="background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 1rem; padding: 0 4px; line-height: 1; transition: color 0.2s;" onmouseover="this.style.color='#dc3545'" onmouseout="this.style.color='#94a3b8'" title="حذف الإشعار">
-                        &times;
-                      </button>
-                    </form>
+      @if(session('error'))
+        <div style="background: #fee2e2; color: #991b1b; padding: 14px 18px; border-radius: 10px; margin-bottom: 24px; font-size: 0.9rem; border: 1px solid #fecaca;">
+          {{ session('error') }}
+        </div>
+      @endif
+
+      <!-- بانر الترحيب الاحترافي -->
+      <div class="welcome-banner">
+        <div>
+          <h1>مرحباً بك، {{ Auth::user()->name }} 👋</h1>
+          <p>إليك ملخص لموادك الدراسية والمستجدات الخاصة بك لهذا الفصل.</p>
+        </div>
+        <div class="topbar-notifications">
+        <button class="notification-btn" onclick="toggleNotificationsDropdown(event)" title="الإشعارات">
+          🔔
+          @if(isset($notifications) && $notifications->count() > 0)
+            <span class="notification-badge">{{ $notifications->count() }}</span>
+          @endif
+        </button>
+        <div class="notifications-dropdown" id="notificationsDropdown">
+          <div class="notifications-header">التنبيهات والإشعارات</div>
+          <div class="notifications-body">
+            @forelse($notifications ?? [] as $notification)
+              <a href="#" class="notification-item">
+                <strong style="display: block; margin-bottom: 2px; color: #0f172a;">{{ $notification->title ?? 'تنبيه جديد' }}</strong>
+                <p style="margin: 0; color: #64748b; font-size: 0.8rem;">{{ Str::limit($notification->body ?? $notification->message, 50) }}</p>
+              </a>
+            @empty
+              <div style="padding: 20px; text-align: center; color: #64748b; font-size: 0.85rem;">لا توجد إشعارات جديدة</div>
+            @endforelse
+          </div>
+        </div>
+      </div>
+      </div>
+
+      <!-- قسم المواد المسجلة -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="font-size: 1.25rem; font-weight: 700; color: #0f172a; margin: 0;">المواد المسجلة</h2>
+      </div>
+
+      <div class="subjects-grid">
+          @forelse($enrolledSubjects ?? [] as $subject)
+              <div class="subject-card">
+                  <div>
+                      <h3 class="subject-title">{{ $subject->name }}</h3>
+                      <p class="subject-desc">
+                          {{ Str::limit($subject->description ?? 'لا يوجد وصف متاح لهذه المادة حالياً.', 80) }}
+                      </p>
                   </div>
-                @empty
-                  <div style="padding: 20px; text-align: center; color: #888; font-size: 0.85rem;">
-                    لا توجد إشعارات جديدة.
+
+                  <div>
+                      <!-- إحصائيات المادة (محاضرات، اختبارات، إعلانات) -->
+                      <div class="subject-stats">
+                          <div class="stat-item">
+                              <span>محاضرات</span>
+                              <strong>{{ optional($subject->lessons)->count() ?? 0 }}</strong>
+                          </div>
+                          <div class="stat-item" style="border-right: 1px solid #e2e8f0; border-left: 1px solid #e2e8f0;">
+                              <span>اختبارات</span>
+                              <strong>{{ optional($subject->assignments)->count() ?? 0 }}</strong>
+                          </div>
+                          <div class="stat-item">
+                              <span>إعلانات</span>
+                              <strong>{{ optional($subject->announcements)->count() ?? 0 }}</strong>
+                          </div>
+                      </div>
+
+                      <a href="{{ route('student.subject.show', $subject->id) }}" class="btn-enter">
+                          دخول المادة
+                      </a>
                   </div>
-                @endforelse
               </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- مواد الطالب في الرئيسية -->
-      <div style="margin-bottom: 24px;">
-        <h3 style="margin-bottom: 12px; font-size: 1.2rem; color: #1a1a1a;">موادي الدراسية</h3>
-        <div class="stat-grid" style="grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px;">
-          @forelse($enrolledSubjects as $subject)
-            <div class="card stat-card" onclick="goToSubjectView('{{ $subject->name }}', {{ json_encode($subject->lessons) }}, {{ json_encode($subject->assignments) }})" style="cursor: pointer; text-align: right; padding: 20px;">
-              <div style="font-size: 1.8rem; margin-bottom: 8px;">📖</div>
-              <div class="num" style="font-size: 1.2rem; margin-bottom: 4px; color: #1a1a1a;">{{ $subject->name }}</div>
-              <div class="lbl" style="font-size: 0.85rem; color: #666;">
-                {{ $subject->lessons->count() }} محاضرة | {{ $subject->assignments->count() }} اختبار
-              </div>
-            </div>
           @empty
-            <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 30px; color: #666;">
-              لست مسجلاً في أي مادة دراسية حتى الآن.
-            </div>
-          @endforelse
-        </div>
-      </div>
-
-      <div class="card section-card">
-        <div class="section-head">
-          <h2>أحدث ما نزّله معلموك</h2>
-          <a href="#lectures" class="btn btn-outline btn-sm" onclick="showSection(event, 'lectures')">عرض كل المحاضرات</a>
-        </div>
-        <div id="overviewLectures">
-          @forelse($latestLessons ?? [] as $lesson)
-            <div style="padding: 12px 0; border-bottom: 1px solid var(--border-color, #eee);">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                <strong>{{ $lesson->title }}</strong>
-                @if($lesson->subject)
-                  <span style="background: #e2e8f0; color: #1e293b; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold;">
-                    📚 {{ $lesson->subject->name }}
-                  </span>
-                @endif
+              <div class="empty-state">
+                  أنت لست مسجلاً في أي مادة دراسية حتى الآن.
               </div>
-              <a href="{{ $lesson->description }}" target="_blank" style="margin: 0 0 6px 0; font-size: 0.85rem; color: #666;">🔗 رابط المحاضرة</a>
-              @if(!empty($lesson->video_url))
-                <div style="margin-top: 4px;">
-                  <a href="{{ $lesson->video_url }}" target="_blank" style="font-size: 0.85rem; color: #2563eb; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
-                    🔗 رابط الفيديو
-                  </a>
-                </div>
-              @endif
-            </div>
-          @empty
-            <p style="color: #888; font-size: 0.9rem; margin-top: 10px;">لا يوجد محاضرات صادرة حديثاً.</p>
           @endforelse
-        </div>
-      </div>
-    </section>
-
-    <!-- ===== واجهة تفاصيل المادة المحددة ===== -->
-    <section data-section="subject-details" hidden>
-      <div class="main-head">
-        <div>
-          <h1 id="viewSubjectTitle">اسم المادة</h1>
-          <p>جميع المحاضرات والاختبارات التي أنزلها المعلم لهذه المادة.</p>
-        </div>
-        <button class="btn btn-outline btn-sm" onclick="showOverviewSection()">العودة للرئيسية</button>
       </div>
 
-      <!-- قسم المحاضرات الخاصة بالمادة -->
-      <div class="card section-card" style="margin-bottom: 20px;">
-        <h3 style="margin-bottom: 15px; font-size: 1.1rem; color: #0f172a;">📚 محاضرات المادة</h3>
-        <div id="viewSubjectLessonsList">
-          <!-- سيتم تعبئتها ديناميكياً -->
-        </div>
-      </div>
-
-      <!-- قسم الاختبارات الخاصة بالمادة -->
-      <div class="card section-card">
-        <h3 style="margin-bottom: 15px; font-size: 1.1rem; color: #0f172a;">📝 اختبارات وواجبات المادة</h3>
-        <div id="viewSubjectAssignmentsList">
-          <!-- سيتم تعبئتها ديناميكياً -->
-        </div>
-      </div>
-    </section>
-
-    <!-- ===== المحاضرات ===== -->
-    <section data-section="lectures" hidden>
-      <div class="main-head">
-        <div><h1>المحاضرات</h1><p>كل محاضرة ينزّله معلمك تصلك هنا فور نشرها، مرتبة بحسب موادك المسجلة.</p></div>
-      </div>
-      <div id="lecturesList"></div>
-      <div id="lecturesEmpty" class="card empty-state" hidden><div class="glyph">🎥</div><p>لم يُنشر أي محتوى بعد. تابع لاحقاً.</p></div>
-    </section>
-
-    <!-- ===== الاختبارات ===== -->
-    <section data-section="exams" hidden>
-      <div class="main-head">
-        <div><h1>الاختبارات</h1><p>اختبارات مسارك المجدولة، مع نتيجتك عند توفرها.</p></div>
-      </div>
-      <div id="examsList"></div>
-      <div id="examsEmpty" class="card empty-state" hidden><div class="glyph">📝</div><p>لا يوجد اختبارات مجدولة حالياً.</p></div>
-    </section>
-
-    <!-- ===== الإعلانات ===== -->
-    <section data-section="announcements" hidden>
-      <div class="main-head">
-        <div><h1>الإعلانات</h1><p>تعميمات المركز والإدارة والمعلمين.</p></div>
-      </div>
-      <div class="card section-card" id="annList">
-        @forelse($announcements ?? [] as $announcement)
-          <div style="padding: 16px 0; border-bottom: 1px solid var(--border-color, #eee);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <strong style="font-size: 1.05rem; color: #0f172a;">{{ $announcement->title }}</strong>
-              @if($announcement->subject)
-                <span style="background: #e2e8f0; color: #1e293b; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold;">
-                  📚 {{ $announcement->subject->name }}
-                </span>
-              @endif
-            </div>
-            <p style="margin: 0 0 8px 0; font-size: 0.9rem; color: #334155; line-height: 1.5;">{{ $announcement->body }}</p>
-            <div style="font-size: 0.75rem; color: #64748b; display: flex; gap: 12px;">
-              @if($announcement->teacher)
-                <span>👨‍🏫 المعلم: {{ $announcement->teacher->name }}</span>
-              @endif
-              <span>📅 {{ $announcement->created_at->diffForHumans() }}</span>
-            </div>
-          </div>
-        @empty
-          <div class="empty-state" style="text-align: center; padding: 30px; color: #666;">
-            <div class="glyph" style="font-size: 2rem; margin-bottom: 8px;">📢</div>
-            <p style="margin: 0; font-size: 0.9rem;">لا توجد إعلانات منشورة حتى الآن.</p>
-          </div>
-        @endforelse
-      </div>
-    </section>
-
-    <!-- ===== تعديل البيانات الشخصية ===== -->
-    <section data-section="profile" hidden>
-      <div class="main-head" style="display: flex; justify-content: space-between; align-items: center;">
-        <div>
-          <h1>تعديل البيانات الشخصية</h1>
-          <p style="color: #666; margin-top: 4px;">يمكنك تعديل اسمك، البريد الإلكتروني، أو تغيير كلمة المرور الخاصة بك.</p>
-        </div>
-        <button class="btn btn-outline btn-sm" onclick="showOverviewSection()">العودة للرئيسية</button>
-      </div>
-
-      <div class="card section-card" style="max-width: 600px;">
-        <form action="{{ route('student.profile.update') }}" method="POST">
-          @csrf
-          @method('PATCH')
-
-          <div class="field" style="margin-bottom: 15px;">
-            <label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9rem;">الاسم الكامل</label>
-            <input type="text" name="name" value="{{ Auth::user()->name }}" required style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px;">
-          </div>
-
-          <div class="field" style="margin-bottom: 15px;">
-            <label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9rem;">البريد الإلكتروني</label>
-            <input type="email" name="email" value="{{ Auth::user()->email }}" required style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px;">
-          </div>
-
-          <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;">
-
-          <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 15px;">اترك حقل كلمة المرور فارغاً إذا كنت لا تريد تغييرها.</p>
-
-          <div class="field" style="margin-bottom: 15px;">
-            <label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9rem;">كلمة المرور الجديدة</label>
-            <input type="password" name="password" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px;">
-          </div>
-
-          <div class="field" style="margin-bottom: 20px;">
-            <label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9rem;">تأكيد كلمة المرور الجديدة</label>
-            <input type="password" name="password_confirmation" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px;">
-          </div>
-
-          <button type="submit" class="btn btn-primary" style="background: #0f172a; color: #fff; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer;">حفظ التعديلات</button>
-        </form>
-      </div>
-    </section>
-
+    </div>
   </main>
 </div>
 
-<!-- ===== نافذة تسليم حل الواجب/الاختبار للطالب ===== -->
-<div class="modal-backdrop" id="submitAssignmentModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center;">
-  <div class="modal" style="background: #fff; padding: 25px; border-radius: 8px; width: 400px; max-width: 90%; text-align: right;">
-    <h3 id="samTitle" style="margin-bottom: 15px; font-size: 1.1rem; color: #0f172a;">تسليم حل الواجب/الاختبار</h3>
-    <form id="submitAssignmentForm" method="POST" enctype="multipart/form-data">
-      @csrf
-      <div class="field" style="margin-bottom: 15px;">
-        <label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9rem;">ملف الحل (PDF, Word, Zip, صور)</label>
-        <input type="file" name="solution_file" required style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem;">
-      </div>
-      <div class="field" style="margin-bottom: 20px;">
-        <label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9rem;">ملاحظات للطالب (اختياري)</label>
-        <textarea name="notes" rows="3" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem;" placeholder="أضف أي ملاحظات لمعلمك هنا..."></textarea>
-      </div>
-      <div class="modal-actions" style="display: flex; gap: 10px; justify-content: flex-end;">
-        <button type="submit" class="btn btn-primary" style="background: #0f172a; color: #fff; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;">رفع وإرسال الحل</button>
-        <button type="button" class="btn btn-ghost" onclick="closeSubmitModal()" style="background: #e2e8f0; color: #1e293b; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;">إلغاء</button>
-      </div>
-    </form>
-  </div>
-</div>
-
 <script>
-  // دالة فتح وإغلاق القائمة المنسدلة الفرعية للمواد
   function toggleSubMenu(event) {
     event.preventDefault();
     let subMenu = document.getElementById('subjectsSubMenu');
@@ -417,117 +395,24 @@
     }
   }
 
-  // دالة إظهار/إخفاء قائمة الإشعارات المنسدلة في الهيدر
   function toggleNotificationsDropdown(event) {
     event.stopPropagation();
     let dropdown = document.getElementById('notificationsDropdown');
     dropdown.classList.toggle('show');
   }
 
-  // إغلاق قائمة الإشعارات عند النقر في أي مكان خارجها
   window.addEventListener('click', function() {
     let dropdown = document.getElementById('notificationsDropdown');
     if (dropdown && dropdown.classList.contains('show')) {
       dropdown.classList.remove('show');
     }
   });
-
-  // الانتقال للأقسام العامة
-  function showSection(event, sectionName) {
-    event.preventDefault();
-    document.querySelectorAll('main > section').forEach(sec => sec.hidden = true);
-    let targetSec = document.querySelector(`section[data-section="${sectionName}"]`);
-    if (targetSec) targetSec.hidden = false;
-
-    document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
-    if (event.currentTarget && event.currentTarget.tagName === 'A') {
-      event.currentTarget.classList.add('active');
-    }
-  }
-
-  // الانتقال لواجهة تفاصيل المادة المحددة وتعبئة بياناتها
-  function goToSubjectView(subjectName, lessons, assignments) {
-    document.getElementById('viewSubjectTitle').innerText = 'مادة: ' + subjectName;
-    
-    let lessonsContainer = document.getElementById('viewSubjectLessonsList');
-    if (lessons.length > 0) {
-      lessonsContainer.innerHTML = lessons.map(l => `
-        <div style="padding: 12px 0; border-bottom: 1px solid #e2e8f0;">
-          <strong>${l.title}</strong>
-          <br> <br>
-          <a href="${l.description}" target="_blank" style="margin: 4px 0 4px 0; font-size: 0.85rem;">🔗 رابط المحاضرة</a>
-          ${l.video_url ? `<a href="${l.video_url}" target="_blank" style="font-size: 0.85rem; color: #2563eb; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; margin-right: 10px;">🔗 رابط الفيديو</a>` : ''}
-        </div>
-      `).join('');
-    } else {
-      lessonsContainer.innerHTML = '<p style="color: #888; font-size: 0.9rem;">لم ينزل المعلم أي محاضرات لهذه المادة بعد.</p>';
-    }
-
-    let assignmentsContainer = document.getElementById('viewSubjectAssignmentsList');
-    if (assignments.length > 0) {
-      assignmentsContainer.innerHTML = assignments.map(a => `
-        <div style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
-          <div>
-            <strong>${a.title}</strong>
-            <p style="margin: 4px 0 0; font-size: 0.85rem; color: #666;">${a.description || 'لا يوجد وصف'}</p>
-            
-            <div style="margin-top: 8px; display: flex; gap: 8px; align-items: center;">
-              ${(a.file_path || a.file) ? `
-                <a href="/student/assignments/${a.id}/download" style="background-color: #0ea5e9; color: #fff; padding: 5px 10px; border-radius: 6px; text-decoration: none; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px;">
-                  📎 تحميل ملف الاختبار
-                </a>
-              ` : ''}
-              <button type="button" onclick="openSubmitModal(${a.id}, '${a.title.replace(/'/g, "\\'")}')" style="background-color: #10b981; color: #fff; padding: 5px 10px; border-radius: 6px; border: none; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
-                📤 تسليم الحل
-              </button>
-            </div>
-          </div>
-          <span style="background: #f1f5f9; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: bold;">اختبار نشط</span>
-        </div>
-      `).join('');
-    } else {
-      assignmentsContainer.innerHTML = '<p style="color: #888; font-size: 0.9rem;">لا توجد اختبارات لهذه المادة حالياً.</p>';
-    }
-
-    document.querySelectorAll('main > section').forEach(sec => sec.hidden = true);
-    document.querySelector('section[data-section="subject-details"]').hidden = false;
-  }
-
-  // فتح نافذة رفع حل الواجب/الاختبار
-  function openSubmitModal(assignmentId, assignmentTitle) {
-    let modal = document.getElementById('submitAssignmentModal');
-    let form = document.getElementById('submitAssignmentForm');
-    let titleEl = document.getElementById('samTitle');
-    
-    if (modal && form && titleEl) {
-        titleEl.innerText = 'تسليم حل: ' + assignmentTitle;
-        form.action = `/student/assignments/${assignmentId}/submit`;
-        modal.style.display = 'flex'; // اجبار ظهور النافذة
-    } else {
-        console.error("عناصر نافذة التسليم غير موجودة في الصفحة!");
-    }
-}
-
-  // إغلاق نافذة تسليم الحل
-  function closeSubmitModal() {
-    let modal = document.getElementById('submitAssignmentModal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
-}
-
-  // العودة للرئيسية
-  function showOverviewSection() {
-    document.querySelectorAll('main > section').forEach(sec => sec.hidden = true);
-    document.querySelector('section[data-section="overview"]').hidden = false;
-    document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
-    document.querySelector('.sidebar-nav a[data-target="overview"]').classList.add('active');
-  }
 </script>
 
 <script src="{{ asset('js/theme.js') }}"></script>
 <script src="{{ asset('js/ui.js') }}"></script>
 <script src="{{ asset('js/layout.js') }}"></script>
 <script src="{{ asset('js/dashboard-student.js') }}"></script>
+@stack('scripts')
 </body>
 </html>

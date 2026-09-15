@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 
 class LessonController extends Controller
 {
-    // صفحة عرض كل المحاضرات
+    // صفحة عرض كل المحاضرات النشطة
     public function index()
     {
         $teacher = Auth::user();
@@ -39,7 +39,7 @@ class LessonController extends Controller
 
             $teacher = Auth::user();
             
-            // جلب أول مادة مرتبطة بالمعلم، أو جلب أول مادة متوفرة في النظام كقيمة افتراضية
+            // جلب أول مادة مرتبطة بالعالم، أو جلب أول مادة متوفرة في النظام كقيمة افتراضية
             $subject = $teacher->subjects()->first() ?? Subject::first();
 
             if (!$subject) {
@@ -127,7 +127,7 @@ class LessonController extends Controller
         }
     }
 
-    // حذف المحاضرة وإرسال إشعارات للطلاب
+    // حذف المحاضرة مؤقتاً (Soft Delete) وإرسال إشعارات للطلاب
     public function destroy($id)
     {
         try {
@@ -138,7 +138,7 @@ class LessonController extends Controller
             // جلب الطلاب المرتبطين بالمادة قبل الحذف
             $subject = Subject::with('students')->find($subjectId);
 
-            $lesson->delete();
+            $lesson->delete(); // سيقوم بالحذف المؤقت Soft Delete بفضل الـ Trait
 
             // إرسال إشعار للطلاب بحذف المحاضرة
             if ($subject && $subject->students) {
@@ -150,14 +150,76 @@ class LessonController extends Controller
                 }
             }
 
-            Log::info('تم حذف المحاضرة: "' . $lessonTitle . '" (ID: ' . $id . ') بواسطة المعلم ID: ' . Auth::id());
+            Log::info('تم نقل المحاضرة للأرشيف (حذف مؤقت): "' . $lessonTitle . '" (ID: ' . $id . ') بواسطة المعلم ID: ' . Auth::id());
 
-            return redirect()->route('teacher.lessons.index')->with('success', 'تم حذف المحاضرة وإبلاغ الطلاب بنجاح.');
+            return redirect()->route('teacher.lessons.index')->with('success', 'تم نقل المحاضرة إلى سلة المهملات بنجاح.');
 
         } catch (\Exception $e) {
-            Log::error('فشل في حذف المحاضرة ID: ' . $id . ' بواسطة المعلم ID: ' . Auth::id() . ' | الخطأ: ' . $e->getMessage());
+            Log::error('فشل في حذف المحاضرة مؤقتاً ID: ' . $id . ' بواسطة المعلم ID: ' . Auth::id() . ' | الخطأ: ' . $e->getMessage());
 
             return back()->with('error', 'حدث خطأ ما أثناء حذف المحاضرة.');
         }
     }
+
+    // ==========================================
+    // دوال سلة المهملات والأرشيف (المضاف حديثاً)
+    // ==========================================
+
+    // عرض أرشيف المحاضرات المحذوفة خاصة بالمعلم الحالي
+    public function trash()
+    {
+        $teacherId = Auth::id();
+        $trashedLessons = Lesson::onlyTrashed()
+            ->where('teacher_id', $teacherId)
+            ->with('subject')
+            ->latest()
+            ->get();
+
+        return view('teacher.lessons.trash', compact('trashedLessons'));
+    }
+
+    // استعادة المحاضرة من سلة المهملات
+    public function restore($id)
+    {
+        try {
+            $lesson = Lesson::onlyTrashed()
+                ->where('id', $id)
+                ->where('teacher_id', Auth::id())
+                ->firstOrFail();
+
+            $lesson->restore();
+
+            return redirect()->route('teacher.lessons.trash')->with('success', 'تمت استعادة المحاضرة بنجاح.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'حدث خطأ أثناء محاولة استعادة المحاضرة.');
+        }
+    }
+
+    // الحذف النهائي للمحاضرة من قاعدة البيانات
+    public function forceDelete($id)
+    {
+        try {
+            $lesson = Lesson::onlyTrashed()
+                ->where('id', $id)
+                ->where('teacher_id', Auth::id())
+                ->firstOrFail();
+
+            $lesson->forceDelete();
+
+            return redirect()->route('teacher.lessons.trash')->with('success', 'تم حذف المحاضرة نهائياً من النظام.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'حدث خطأ أثناء الحذف النهائي للمحاضرة.');
+        }
+    }
+    // تفريغ سلة المهملات بالكامل (حذف نهائي لكل محاضرات المعلم المحذوفة)
+  public function emptyTrash()
+{
+    try {
+        $teacherId = Auth::id();
+        Lesson::onlyTrashed()->where('teacher_id', $teacherId)->forceDelete();
+        return redirect()->route('teacher.lessons.trash')->with('success', 'تم تفريغ سلة المهملات نهائياً.');
+    } catch (\Exception $e) {
+        return back()->with('error', 'حدث خطأ ما.');
+    }
+}
 }

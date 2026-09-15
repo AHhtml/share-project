@@ -90,10 +90,17 @@
             box-sizing: border-box;
             outline: none;
             transition: border-color 0.2s;
+            background-color: #fff;
         }
 
         .form-control:focus {
             border-color: var(--primary-color);
+        }
+
+        /* تنسيق خاص لحقل رفع الملفات لتناسب التصميم */
+        input[type="file"].form-control {
+            padding: 9px 16px;
+            cursor: pointer;
         }
 
         .btn-submit {
@@ -138,7 +145,8 @@
                 </div>
             @endif
 
-            <form action="{{ route('teacher.profile') }}" method="POST">
+            <!-- تم تعديل مسار الـ action هنا ليوجه إلى مسار التحديث الصحيح -->
+            <form action="{{ route('teacher.profile.update') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
 
@@ -150,6 +158,12 @@
                 <div class="form-group">
                     <label>البريد الإلكتروني</label>
                     <input type="email" name="email" class="form-control" value="{{ old('email', $user->email) }}" required>
+                </div>
+
+                <!-- حقل رفع الصورة الشخصية -->
+                <div class="form-group">
+                    <label>الصورة الشخصية</label>
+                    <input type="file" name="avatar" class="form-control" accept="image/jpeg,image/png,image/jpg,image/webp">
                 </div>
 
                 <div class="form-group">
