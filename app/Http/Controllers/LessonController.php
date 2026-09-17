@@ -128,38 +128,40 @@ class LessonController extends Controller
     }
 
     // حذف المحاضرة مؤقتاً (Soft Delete) وإرسال إشعارات للطلاب
-    public function destroy($id)
-    {
-        try {
-            $lesson = Lesson::where('id', $id)->where('teacher_id', Auth::id())->firstOrFail();
-            $lessonTitle = $lesson->title;
-            $subjectId = $lesson->subject_id;
+   public function destroy($id)
+{
+    try {
+        $lesson = Lesson::where('id', $id)->where('teacher_id', Auth::id())->firstOrFail();
+        $lessonTitle = $lesson->title;
+        $subjectId = $lesson->subject_id;
 
-            // جلب الطلاب المرتبطين بالمادة قبل الحذف
-            $subject = Subject::with('students')->find($subjectId);
+        // جلب الطلاب المرتبطين بالمادة قبل الحذف
+        $subject = Subject::with('students')->find($subjectId);
 
-            $lesson->delete(); // سيقوم بالحذف المؤقت Soft Delete بفضل الـ Trait
+        // حذف المحاضرة (سيتم تفعيل الـ Observer وحذف الملف تلقائياً إذا تم الحذف النهائي، 
+        // أو الاكتفاء بالنقل لسلة المهملات إذا كنت تستخدم SoftDeletes)
+        $lesson->delete(); 
 
-            // إرسال إشعار للطلاب بحذف المحاضرة
-            if ($subject && $subject->students) {
-                foreach ($subject->students as $student) {
-                    Notification::create([
-                        'user_id' => $student->id,
-                        'message' => 'تم حذف المحاضرة: ' . $lessonTitle,
-                    ]);
-                }
+        // إرسال إشعار للطلاب بحذف المحاضرة
+        if ($subject && $subject->students) {
+            foreach ($subject->students as $student) {
+                Notification::create([
+                    'user_id' => $student->id,
+                    'message' => 'تم حذف المحاضرة: ' . $lessonTitle,
+                ]);
             }
-
-            Log::info('تم نقل المحاضرة للأرشيف (حذف مؤقت): "' . $lessonTitle . '" (ID: ' . $id . ') بواسطة المعلم ID: ' . Auth::id());
-
-            return redirect()->route('teacher.lessons.index')->with('success', 'تم نقل المحاضرة إلى سلة المهملات بنجاح.');
-
-        } catch (\Exception $e) {
-            Log::error('فشل في حذف المحاضرة مؤقتاً ID: ' . $id . ' بواسطة المعلم ID: ' . Auth::id() . ' | الخطأ: ' . $e->getMessage());
-
-            return back()->with('error', 'حدث خطأ ما أثناء حذف المحاضرة.');
         }
+
+        Log::info('تم نقل المحاضرة للأرشيف (حذف مؤقت): "' . $lessonTitle . '" (ID: ' . $id . ') بواسطة المعلم ID: ' . Auth::id());
+
+        return redirect()->route('teacher.lessons.index')->with('success', 'تم نقل المحاضرة إلى سلة المهملات بنجاح.');
+
+    } catch (\Exception $e) {
+        Log::error('فشل في حذف المحاضرة مؤقتاً ID: ' . $id . ' بواسطة المعلم ID: ' . Auth::id() . ' | الخطأ: ' . $e->getMessage());
+
+        return back()->with('error', 'حدث خطأ ما أثناء حذف المحاضرة.');
     }
+}
 
     // ==========================================
     // دوال سلة المهملات والأرشيف (المضاف حديثاً)

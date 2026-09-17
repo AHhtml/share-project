@@ -80,10 +80,13 @@
             outline: none;
             transition: border-color 0.2s;
             box-sizing: border-box;
+            background-color: #f8fafc;
         }
 
         .field input:focus {
             border-color: var(--primary-color);
+            background-color: #ffffff;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
         }
 
         .form-actions {
@@ -103,6 +106,11 @@
             font-weight: 500;
             font-size: 0.95rem;
             flex: 1;
+            transition: opacity 0.2s;
+        }
+
+        .btn-submit:hover {
+            opacity: 0.9;
         }
 
         .btn-cancel {
@@ -118,6 +126,10 @@
             display: inline-block;
             box-sizing: border-box;
             line-height: normal;
+        }
+
+        .btn-cancel:hover {
+            background-color: #e2e8f0;
         }
 
         .alert-success {
@@ -136,12 +148,6 @@
             border-radius: 8px;
             margin-bottom: 20px;
             font-size: 0.9rem;
-        }
-
-        .header-actions {
-            display: flex;
-            gap: 6px;
-            align-items: center;
         }
 
         .btn-icon {
@@ -170,9 +176,8 @@
     <div class="container">
         <div class="card">
             <div class="form-header">
-                <!-- زر العودة الصغير في الأعلى -->
-                <a href="{{ route('management.subjects.students', $student->subject_id ?? 3) }}" class="btn-icon">← عودة</a>
-                
+                <!-- زر العودة المباشر لصفحة الطلاب -->
+                <a href="{{ route('management.students.index') }}" class="btn-icon">← عودة</a>
                 <h1>تعديل بيانات الطالب: {{ $student->name }} ✏️</h1>
             </div>
 
@@ -192,7 +197,7 @@
                 </div>
             @endif
 
-            <!-- الفورم يحيط بالحقول والأزرار لضمان عمل زر الحفظ والإلغاء بشكل صحيح -->
+            <!-- نموذج تعديل البيانات -->
             <form action="{{ route('management.students.update', $student->id) }}" method="POST">
                 @csrf
                 @method('PUT')
@@ -208,24 +213,23 @@
                 </div>
 
                 <div class="field">
+                    <label>رقم الجوال</label>
+                    <input type="text" name="phone" value="{{ old('phone', $student->phone) }}" placeholder="مثال: 0591234567" dir="ltr" style="text-align: right;">
+                </div>
+
+                <div class="field">
                     <label>كلمة المرور الجديدة (اختياري)</label>
                     <input type="password" name="password" placeholder="اتركها فارغة إذا لم تقم برغبة تغييرها">
                 </div>
 
                 <div class="form-actions">
                     <button type="submit" class="btn-submit">حفظ كافة التعديلات</button>
-                    <!-- زر الإلغاء -->
-                    <a href="{{ route('management.subjects.students', $student->subject_id ?? 3) }}" class="btn-cancel">إلغاء</a>
+                    <!-- زر الإلغاء المباشر لصفحة الطلاب -->
+                    <a href="{{ route('management.students.index') }}" class="btn-cancel">إلغاء</a>
                 </div>
             </form>
         </div>
     </div>
-
-    <!-- فورم مخفي لتنفيذ عملية الحذف الاحترافي إن وجد زر حذف مرتبط -->
-    <form id="delete-form" action="{{ route('management.users.destroy', $student->id) }}" method="POST" style="display: none;">
-        @csrf
-        @method('DELETE')
-    </form>
 
 </body>
 </html>

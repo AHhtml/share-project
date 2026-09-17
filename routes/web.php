@@ -62,7 +62,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/users', [ManagementController::class, 'usersIndex'])->name('users.index');
         Route::post('/users', [ManagementController::class, 'storeUser'])->name('users.store');
         Route::put('/users/{id}', [ManagementController::class, 'update'])->name('users.update');
-        Route::delete('/users/{id}', [ManagementController::class, 'destroyUser'])->name('users.destroy');
+        
+        // تم تصحيح هذا السطر ليتوافق مع دالة destroy في الكونترولر
+        Route::delete('/users/{user}', [ManagementController::class, 'destroy'])->name('users.destroy');
+
+        // مسارات تصدير واستيراد المستخدمين (Data Export & Import)
+        Route::get('/users/export', [UserController::class, 'export'])->name('users.export');
+        Route::post('/users/import', [UserController::class, 'import'])->name('users.import');
 
         // مسارات عرض وإدارة جميع طلاب المركز
         Route::get('/students', [ManagementController::class, 'allStudentsIndex'])->name('students.index');
@@ -104,6 +110,10 @@ Route::middleware('auth')->group(function () {
 
         // إدارة الطلاب
         Route::get('/students', [StudentController::class, 'index'])->name('students.index');
+        
+        // مسار تصدير قائمة طلاب المعلم إلى إكسل / CSV
+        Route::get('/students/export', [StudentController::class, 'exportStudents'])->name('students.export');
+
         Route::get('/students/create', [StudentController::class, 'create'])->name('students.create');
         Route::post('/students', [StudentController::class, 'store'])->name('students.store');
         Route::delete('/students/{id}', [StudentController::class, 'destroy'])->name('students.destroy');
@@ -137,14 +147,14 @@ Route::middleware('auth')->group(function () {
         Route::get('/submissions/{id}/download', [AssignmentController::class, 'downloadSubmission'])->name('submissions.download');
     });
 
-    // 4. لوحة تحكم الطالب (مُحدثة لدعم الصفحات المستقلة ومسارات المواد)
+    // 4. لوحة تحكم الطالب
     Route::middleware('role:student')->prefix('student')->name('student.')->group(function () {
         Route::get('/dashboard', [StudentController::class, 'dashboard'])->name('dashboard');
         
         // عرض تفاصيل مادة معينة للطالب
         Route::get('/subjects/{id}', [StudentController::class, 'showSubject'])->name('subject.show');
 
-        // تعديل البيانات الشخصية للطالب (تم دمج المسارات لتتوافق مع Controller والـ View)
+        // تعديل البيانات الشخصية للطالب
         Route::get('/profile', [StudentController::class, 'editProfile'])->name('profile.edit');
         Route::patch('/profile', [StudentController::class, 'updateProfile'])->name('profile.update');
 

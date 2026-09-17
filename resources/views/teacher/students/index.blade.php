@@ -18,6 +18,8 @@
     --border-color: #e2e8f0;
     --danger-color: #ef4444;
     --danger-hover: #dc2626;
+    --success-color: #10b981;
+    --success-hover: #059669;
   }
 
   body {
@@ -60,6 +62,8 @@
     align-items: center;
     margin-bottom: 30px;
     border: 1px solid var(--border-color);
+    flex-wrap: wrap;
+    gap: 20px;
   }
 
   .header-content h1 {
@@ -75,10 +79,17 @@
     font-size: 1rem;
   }
 
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
   .btn-add {
     background-color: var(--primary-color);
     color: #fff;
-    padding: 12px 24px;
+    padding: 12px 20px;
     border-radius: 10px;
     text-decoration: none;
     font-weight: 700;
@@ -91,6 +102,25 @@
 
   .btn-add:hover {
     background-color: var(--primary-hover);
+    transform: translateY(-1px);
+  }
+
+  .btn-export {
+    background-color: #10b981;
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+  }
+
+  .btn-export:hover {
+    background-color: #059669;
     transform: translateY(-1px);
   }
 
@@ -243,9 +273,14 @@
       <h1>🎓 طلابي</h1>
       <p>إدارة ومتابعة الطلاب المسجلين في المساقات الخاصة بك بكل سهولة.</p>
     </div>
-    <a href="{{ route('teacher.students.create') }}" class="btn-add">
-      <i class="fa-solid fa-user-plus"></i> طالب جديد
-    </a>
+    <div class="header-actions">
+      <a href="{{ route('teacher.students.export') }}" class="btn-export">
+        <i class="fa-solid fa-file-excel"></i> تصدير القائمة
+      </a>
+      <a href="{{ route('teacher.students.create') }}" class="btn-add">
+        <i class="fa-solid fa-user-plus"></i> طالب جديد
+      </a>
+    </div>
   </div>
 
   <div class="content-card">
@@ -271,9 +306,6 @@
                   <i class="fa-solid fa-user-minus"></i> إزالة من المساق
                 </button>
               </form>
-
-         
-
             </div>
           </div>
         @empty

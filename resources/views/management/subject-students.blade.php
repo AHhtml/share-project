@@ -268,6 +268,7 @@
                     <tr>
                         <th>اسم الطالب</th>
                         <th>البريد الإلكتروني</th>
+                        <th>رقم الجوال</th>
                         <th>تاريخ التسجيل</th>
                         <th style="text-align: center;">الإجراءات</th>
                     </tr>
@@ -286,13 +287,14 @@
                                 </div>
                             </td>
                             <td style="color: var(--text-muted);">{{ $student->email }}</td>
+                            <td style="color: var(--text-muted);" dir="ltr">{{ $student->phone ?? 'غير متوفر' }}</td>
                             <td style="color: var(--text-muted); font-size: 0.9rem;">
                                 {{ $student->created_at ? $student->created_at->format('Y-m-d') : 'غير متوفر' }}
                             </td>
                             <td style="text-align: center;">
                                 <div class="action-btns">
                                     <!-- زر العرض (نافذة منبثقة SweetAlert2) -->
-                                    <button type="button" class="btn-action btn-show" onclick="showStudentDetails('{{ $student->name }}', '{{ $student->email }}', '{{ $student->created_at ? $student->created_at->format('Y-m-d') : 'غير متوفر' }}')">
+                                    <button type="button" class="btn-action btn-show" onclick="showStudentDetails('{{ $student->name }}', '{{ $student->email }}', '{{ $student->phone ?? 'غير متوفر' }}', '{{ $student->created_at ? $student->created_at->format('Y-m-d') : 'غير متوفر' }}')">
                                         👁️ عرض
                                     </button>
 
@@ -316,7 +318,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4">
+                            <td colspan="5">
                                 <div class="empty-state">
                                     <div class="glyph">🎓</div>
                                     <p>لا يوجد طلاب مسجلين في هذا المساق حالياً.</p>
@@ -331,13 +333,14 @@
 
     <script>
         // دالة عرض بيانات الطالب في نافذة منبثقة تفصيلية
-        function showStudentDetails(name, email, createdAt) {
+        function showStudentDetails(name, email, phone, createdAt) {
             Swal.fire({
                 title: 'معلومات الطالب',
                 html: `
                     <div style="text-align: right; direction: rtl; line-height: 1.8; font-family: 'Tajawal', sans-serif;">
                         <p><strong>الاسم الكامل:</strong> ${name}</p>
                         <p><strong>البريد الإلكتروني:</strong> ${email}</p>
+                        <p><strong>رقم الجوال:</strong> <span dir="ltr">${phone}</span></p>
                         <p><strong>نوع الحساب:</strong> طالب (Student)</p>
                         <p><strong>تاريخ التسجيل:</strong> ${createdAt}</p>
                     </div>

@@ -27,7 +27,7 @@
         direction: rtl;
     }
 
-    /* القائمة الجانبية للإدارة (مطابقة تماماً للون وتصميم قائمة المعلم) */
+    /* القائمة الجانبية للإدارة */
     .sidebar {
         width: 280px;
         background: #065f46; 
@@ -53,7 +53,6 @@
         justify-content: space-between;
     }
 
-    /* قسم الملف الشخصي المطابق لتصميم المعلم */
     .sidebar-profile {
         display: flex;
         align-items: center;
@@ -119,7 +118,6 @@
         color: #ffffff;
     }
 
-    /* تأثير الانتقال السلس للقائمة المنسدلة */
     .collapsible-menu {
         max-height: 0;
         overflow: hidden;
@@ -141,6 +139,145 @@
         padding: 30px;
         overflow-y: auto;
         box-sizing: border-box;
+    }
+
+    /* تنسيق جدول المستخدمين الجديد */
+    .table-container {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: right;
+        background: #ffffff;
+    }
+    .table-container th {
+        background: #f1f5f9;
+        color: #334155;
+        padding: 14px 16px;
+        font-size: 0.9rem;
+        font-weight: 700;
+        border-bottom: 2px solid #e2e8f0;
+    }
+    .table-container td {
+        padding: 14px 16px;
+        color: #1e293b;
+        font-size: 0.9rem;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    .table-container tr:hover td {
+        background: #f8fafc;
+    }
+    .subject-badge {
+        background: #e0f2fe;
+        color: #0369a1;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: inline-block;
+        margin-left: 4px;
+        margin-bottom: 4px;
+    }
+    .role-badge-student {
+        background: #e0f2fe;
+        color: #0369a1;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    .role-badge-teacher {
+        background: #dcfce7;
+        color: #166534;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    /* تنسيق الإشعارات الثابتة (دائمة الظهور حتى يتم إغلاقها) */
+    .toast-container {
+        position: fixed;
+        top: 25px;
+        left: 25px;
+        z-index: 99999;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-width: 380px;
+    }
+
+    .toast-alert {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 18px;
+        border-radius: 10px;
+        background: #ffffff;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+        border-right: 5px solid #3b82f6;
+        animation: slideInRight 0.3s ease-out forwards;
+        font-family: 'Tajawal', sans-serif;
+        direction: rtl;
+    }
+
+    .toast-alert.success {
+        border-right-color: #10b981; /* أخضر للنجاح */
+    }
+
+    .toast-alert.error {
+        border-right-color: #ef4444; /* أحمر للخطأ */
+    }
+
+    .toast-icon {
+        font-size: 1.25rem;
+    }
+
+    .toast-content {
+        flex: 1;
+    }
+
+    .toast-title {
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: #1e293b;
+        margin: 0 0 2px 0;
+    }
+
+    .toast-message {
+        font-size: 0.85rem;
+        color: #64748b;
+        margin: 0;
+    }
+
+    .toast-close-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 1rem;
+        color: #94a3b8;
+        padding: 4px;
+        transition: color 0.2s;
+    }
+
+    .toast-close-btn:hover {
+        color: #1e293b;
+    }
+
+    @keyframes slideInRight {
+        from {
+            transform: translateX(-100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes fadeOut {
+        to {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
     }
 
     /* التجاوب مع الجوال */
@@ -189,6 +326,31 @@
 </head>
 <body data-home="{{ url('/') }}" data-login="{{ route('login') }}">
 
+<!-- حاوية الإشعارات الثابتة (تبقى ظاهرة حتى يتم النقر على زر الإغلاق ✕) -->
+<div class="toast-container" id="toastContainer">
+    @if(session('success'))
+        <div class="toast-alert success" id="toastMessageAlert">
+            <div class="toast-icon">✅</div>
+            <div class="toast-content">
+                <p class="toast-title">تمت العملية بنجاح</p>
+                <p class="toast-message">{{ session('success') }}</p>
+            </div>
+            <button type="button" class="toast-close-btn" onclick="closeToast('toastMessageAlert')" title="إغلاق">✕</button>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="toast-alert error" id="toastMessageAlertError">
+            <div class="toast-icon">❌</div>
+            <div class="toast-content">
+                <p class="toast-title">عذراً، حدث خطأ</p>
+                <p class="toast-message">{{ session('error') }}</p>
+            </div>
+            <button type="button" class="toast-close-btn" onclick="closeToast('toastMessageAlertError')" title="إغلاق">✕</button>
+        </div>
+    @endif
+</div>
+
 <div class="mobile-topbar">
   <button id="menuToggle" style="color:#fff; font-size:1.4rem; background:none; border:none; cursor:pointer;">☰</button>
   <strong id="mobileTitle">منارة — لوحة الإدارة</strong>
@@ -198,75 +360,59 @@
 
 <div class="app-shell">
   <!-- القائمة الجانبية للإدارة -->
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar-content">
-      <div>
-        <!-- عرض الصورة الشخصية واسم المستخدم (مطابق للوحة المعلم) -->
-        <div class="sidebar-profile">
-          @if(!empty(Auth::user()->avatar))
-              <img src="{{ asset('storage/' . Auth::user()->avatar) }}" alt="الصورة الشخصية" class="sidebar-avatar">
-          @else
-              <div class="sidebar-avatar-placeholder">👤</div>
-          @endif
-          <div>
-            <p style="margin: 0 0 2px 0; font-weight: bold; font-size: 1rem; color: #fff;">{{ Auth::user()->name }}</p>
-            <p style="font-size: 0.8rem; color: #38bdf8; margin: 0; font-weight: 600;">الإدارة العامة</p>
-          </div>
-        </div>
+ <aside class="sidebar" id="sidebar">
+    <div style="padding: 20px;">
+      <p style="margin-bottom: 5px; font-weight: bold;">{{ Auth::user()->name }}</p>
+      <p style="font-size: 0.85rem; color: #d97706; margin-bottom: 15px;">الإدارة</p>
+      
+      <nav class="sidebar-nav" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px;">
+        <a href="{{ route('management.dashboard') }}" class="btn btn-ghost nav-item" style="text-align: right; justify-content: start; text-decoration: none;">📊 لوحة التحكم</a>
         
-        <nav class="sidebar-nav">
-          <a href="{{ route('management.dashboard') }}" class="nav-item">📊 لوحة التحكم</a>
-          
-          <!-- زر إدارة المستخدمين الرئيسي -->
-          <button type="button" onclick="toggleMenu('usersMenu')" class="btn-ghost" style="justify-content: space-between;">
-            <span style="display: flex; align-items: center; gap: 10px;">👥 إدارة المستخدمين</span>
+        <button type="button" onclick="toggleMenu('usersMenu')" class="btn btn-ghost nav-item" style="text-align: right; justify-content: space-between; display: flex; width: 100%; background: none; border: none; cursor: pointer;">
+          <span>👥 إدارة المستخدمين</span>
+          <span>▾</span>
+        </button>
+
+        <div id="usersMenu" class="collapsible-menu open" style="padding-right: 15px; margin-top: 4px;">
+          <button type="button" onclick="toggleMenu('studentsMenu')" class="btn btn-ghost" style="text-align: right; justify-content: space-between; display: flex; width: 100%; font-size: 0.9rem; background: none; border: none; cursor: pointer; color: #cbd5e1;">
+            <span>🎓 إدارة الطلاب</span>
             <span>▾</span>
           </button>
-
-          <!-- القائمة الفرعية: إدارة المستخدمين -->
-          <div id="usersMenu" class="collapsible-menu open" style="padding-right: 15px; margin-top: 4px;">
-            
-            <!-- إدارة الطلاب -->
-            <button type="button" onclick="toggleMenu('studentsMenu')" class="btn-ghost" style="justify-content: space-between; font-size: 0.9rem; color: #cbd5e1;">
-              <span style="display: flex; align-items: center; gap: 8px;">🎓 إدارة الطلاب</span>
-              <span>▾</span>
-            </button>
-            
-            <!-- تخصصات الطلاب والقائمة المنسدلة -->
-            <div id="studentsMenu" class="collapsible-menu open" style="padding-right: 15px; margin-top: 2px;">
-              @php
-                  $sidebarSubjects = App\Models\Subject::all();
-              @endphp
-              @forelse($sidebarSubjects as $sub)
-                  <a href="{{ route('management.subjects.students', $sub->id) }}" class="btn-ghost" style="font-size: 0.85rem; color: #94a3b8; padding: 6px 10px;">
-                      • {{ $sub->name }}
-                  </a>
-              @empty
-                  <span style="font-size: 0.8rem; color: #777; padding: 4px 10px;">لا توجد مواد مضافة</span>
-              @endforelse
-            </div>
-
-            <!-- إدارة المعلمين -->
-            <a href="{{ route('management.users.index') }}" class="btn-ghost" style="font-size: 0.9rem; color: #cbd5e1; margin-top: 4px;">
-              📚 إدارة المعلمين
+          
+          <div id="studentsMenu" class="collapsible-menu open" style="padding-right: 15px; margin-top: 2px;">
+            <a href="{{ route('management.students.index') }}" class="btn btn-ghost" style="text-align: right; font-size: 0.85rem; text-decoration: none; color: #38bdf8; display: block; padding: 4px 0; font-weight: bold;">
+                • كل الطلاب
             </a>
+            @php
+                $sidebarSubjects = App\Models\Subject::all();
+            @endphp
+            @forelse($sidebarSubjects as $sub)
+                <a href="{{ route('management.subjects.students', $sub->id) }}" class="btn btn-ghost" style="text-align: right; font-size: 0.85rem; text-decoration: none; color: #94a3b8; display: block; padding: 4px 0;">
+                    • {{ $sub->name }}
+                </a>
+            @empty
+                <span style="font-size: 0.8rem; color: #777; padding: 4px 0;">لا توجد مواد مضافة</span>
+            @endforelse
           </div>
 
-          <a href="{{ route('management.profile') }}" class="nav-item">⚙️ ملفي الشخصي</a>
-        </nav>
-      </div>
+          <a href="{{ route('management.users.index') }}" class="btn btn-ghost" style="text-align: right; justify-content: start; text-decoration: none; font-size: 0.9rem; color: #cbd5e1; margin-top: 4px; display: block;">
+            📚 إدارة المعلمين
+          </a>
+        </div>
+        <a href="{{ route('management.profile') }}" class="btn btn-ghost nav-item" style="text-align: right; justify-content: start; text-decoration: none;">📊 ملفي الشخصي</a>
+      </nav>
 
-      <form action="{{ route('logout') }}" method="POST" style="margin-top: 20px;">
+      <form action="{{ route('logout') }}" method="POST">
         @csrf
-        <button type="submit" style="width: 100%; background-color: #ef4444; color: #fff; border: none; padding: 12px; border-radius: 8px; font-family: 'Tajawal', sans-serif; font-weight: bold; cursor: pointer;">تسجيل الخروج</button>
+        <button type="submit" class="btn btn-primary" style="width: 100%; background-color: #dc3545; border: none;">تسجيل الخروج</button>
       </form>
     </div>
-  </aside>
+ </aside>
 
-  <!-- المحتوى الرئيسي -->
-  <main class="main">
+ <!-- المحتوى الرئيسي -->
+ <main class="main">
 
-    <!-- ===== الرئيسية ===== -->
+    <!-- ===== الجزء العلوي (الإحصائيات) ===== -->
     <section data-section="overview">
       <div class="main-head" style="margin-bottom: 25px;">
         <div>
@@ -297,131 +443,75 @@
           <div class="lbl" style="color: #64748b; font-size: 0.9rem;">اختبار مجدول</div>
         </div>
       </div>
-
-      <div class="card section-card" style="background:#fff; padding:24px; border-radius:12px; border:1px solid #e2e8f0;">
-        <div class="section-head" style="margin-bottom: 15px;">
-          <h2 style="margin: 0; font-size: 1.2rem; color: #1e293b;">أحدث المستخدمين المسجلين</h2>
-        </div>
-        <div>
-          @forelse($latestUsers as $u)
-            <div style="padding: 12px 0; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
-              <div>
-                <strong style="color: #1e293b;">{{ $u->name }}</strong>
-                <span style="font-size: 0.85rem; color: #64748b; margin-right: 8px;">({{ $u->email }})</span>
-              </div>
-              <span class="badge" style="background: #e2e8f0; color: #334155; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600;">
-                {{ $u->role }}
-              </span>
-            </div>
-          @empty
-            <p style="color: #64748b; font-size: 0.9rem; margin: 10px 0; text-align: center;">لا يوجد مستخدمون جدد.</p>
-          @endforelse
-        </div>
-      </div>
     </section>
 
-    <!-- ===== الطلاب ===== -->
-    <section data-section="students" hidden>
-      <div class="main-head" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <div><h1 style="margin:0 0 5px 0;">إدارة الطلاب</h1><p style="margin:0; color:#64748b;">إضافة الطلاب وتعديل بياناتهم أو حذفهم.</p></div>
-        <button class="btn btn-primary" id="addStudentBtn">+ إضافة طالب</button>
+    <!-- ===== الجزء السفلي (سجل أحدث المستخدمين: طلاب ومعلمين) ===== -->
+    <section data-section="users-list">
+      <div class="main-head" style="margin-bottom: 15px;">
+        <h2 style="margin: 0 0 5px 0; font-size: 1.2rem; color: #1e293b;">أحدث المستخدمين المسجلين</h2>
+        <p style="margin: 0; color: #64748b; font-size: 0.9rem;">الاسم، البريد الإلكتروني، رقم الجوال، نوع المستخدم، والمادة المرتبطة.</p>
       </div>
-      <div class="card section-card" style="background:#fff; padding:20px; border-radius:12px; border:1px solid #e2e8f0;">
-        <table class="data-table" style="width: 100%; border-collapse: collapse;">
-          <thead><tr style="border-bottom: 2px solid #e2e8f0; text-align: right;"><th style="padding: 10px;">الاسم</th><th style="padding: 10px;">البريد الإلكتروني</th><th style="padding: 10px;">المسار</th><th style="padding: 10px;">تاريخ الالتحاق</th><th style="padding: 10px;">إجراءات</th></tr></thead>
-          <tbody id="studentsTable"></tbody>
+
+      <div class="card section-card" style="background:#fff; border-radius:12px; border:1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);">
+        <table class="table-container">
+          <thead>
+            <tr>
+              <th>اسم المستخدم</th>
+              <th>البريد الإلكتروني</th>
+              <th>رقم الجوال</th>
+              <th>نوع المستخدم</th>
+              <th>المادة المرتبطة</th>
+            </tr>
+          </thead>
+          <tbody>
+            @forelse($users ?? [] as $user)
+              <tr>
+                <td style="font-weight: 700; color: #0f172a;">{{ $user->name }}</td>
+                <td>{{ $user->email }}</td>
+                <td>{{ $user->phone ?? 'غير متوفر' }}</td>
+                <td>
+                  @if($user->role === 'teacher')
+                    <span class="role-badge-teacher">معلم</span>
+                  @else
+                    <span class="role-badge-student">طالب</span>
+                  @endif
+                </td>
+                <td>
+                  @if($user->subjects && $user->subjects->count() > 0)
+                    @foreach($user->subjects as $subject)
+                      <span class="subject-badge">{{ $subject->name }}</span>
+                    @endforeach
+                  @else
+                    <span style="color: #94a3b8; font-size: 0.85rem;">لا توجد مواد</span>
+                  @endif
+                </td>
+              </tr>
+            @empty
+              <tr>
+                <td colspan="5" style="text-align: center; padding: 40px; color: #64748b;">
+                  <div style="font-size: 2rem; margin-bottom: 8px;">👥</div>
+                  لا توجد بيانات مستخدمين مسجلة حالياً.
+                </td>
+              </tr>
+            @endforelse
+          </tbody>
         </table>
-        <div id="studentsEmpty" class="empty-state" hidden style="text-align: center; padding: 30px;"><div class="glyph" style="font-size: 2rem;">🎓</div><p style="color: #64748b;">لا يوجد طلاب بعد.</p></div>
       </div>
-    </section>
-
-    <!-- ===== المعلمون ===== -->
-    <section data-section="teachers" hidden>
-      <div class="main-head" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <div><h1 style="margin:0 0 5px 0;">إدارة المعلمين</h1><p style="margin:0; color:#64748b;">إضافة المعلمين وتعديل بياناتهم أو حذفهم.</p></div>
-        <button class="btn btn-primary" id="addTeacherBtn">+ إضافة معلم</button>
-      </div>
-      <div class="card section-card" style="background:#fff; padding:20px; border-radius:12px; border:1px solid #e2e8f0;">
-        <table class="data-table" style="width: 100%; border-collapse: collapse;">
-          <thead><tr style="border-bottom: 2px solid #e2e8f0; text-align: right;"><th style="padding: 10px;">الاسم</th><th style="padding: 10px;">البريد الإلكتروني</th><th style="padding: 10px;">التخصص</th><th style="padding: 10px;">تاريخ الالتحاق</th><th style="padding: 10px;">إجراءات</th></tr></thead>
-          <tbody id="teachersTable"></tbody>
-        </table>
-        <div id="teachersEmpty" class="empty-state" hidden style="text-align: center; padding: 30px;"><div class="glyph" style="font-size: 2rem;">📚</div><p style="color: #64748b;">لا يوجد معلمون بعد.</p></div>
-      </div>
-    </section>
-
-    <!-- ===== الإعلانات ===== -->
-    <section data-section="announcements" hidden>
-      <div class="main-head" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <div><h1 style="margin:0 0 5px 0;">الإعلانات</h1><p style="margin:0; color:#64748b;">انشر تعميماً يصل لكل مستخدمي المنصة.</p></div>
-        <button class="btn btn-primary" id="addAnnBtn">+ إعلان جديد</button>
-      </div>
-      <div class="card section-card" id="annList" style="background:#fff; padding:20px; border-radius:12px; border:1px solid #e2e8f0;"></div>
     </section>
 
   </main>
 </div>
 
-<!-- ===== نافذة الطالب ===== -->
-<div class="modal-backdrop" id="studentModal">
-  <div class="modal">
-    <h3 id="studentModalTitle">إضافة طالب</h3>
-    <form id="studentForm">
-      <input type="hidden" id="studentId">
-      <div class="field"><label>الاسم الكامل</label><input type="text" id="studentName" required></div>
-      <div class="field"><label>البريد الإلكتروني</label><input type="email" id="studentEmail" required></div>
-      <div class="field"><label>كلمة المرور</label><input type="text" id="studentPassword" placeholder="اتركها كما هي عند التعديل" required></div>
-      <div class="field"><label>رقم الهاتف</label><input type="tel" id="studentPhone"></div>
-      <div class="field">
-        <label>المسار الدراسي</label>
-        <select id="studentTrack">
-          <option>علمي</option>
-          <option>أدبي</option>
-        </select>
-      </div>
-      <div class="modal-actions">
-        <button type="submit" class="btn btn-primary">حفظ</button>
-        <button type="button" class="btn btn-ghost" onclick="UI.closeModal('studentModal')">إلغاء</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- ===== نافذة المعلم ===== -->
-<div class="modal-backdrop" id="teacherModal">
-  <div class="modal">
-    <h3 id="teacherModalTitle">إضافة معلم</h3>
-    <form id="teacherForm">
-      <input type="hidden" id="teacherId">
-      <div class="field"><label>الاسم الكامل</label><input type="text" id="teacherName" required></div>
-      <div class="field"><label>البريد الإلكتروني</label><input type="email" id="teacherEmail" required></div>
-      <div class="field"><label>كلمة المرور</label><input type="text" id="teacherPassword" placeholder="اتركها كما هي عند التعديل" required></div>
-      <div class="field"><label>رقم الهاتف</label><input type="tel" id="teacherPhone"></div>
-      <div class="field"><label>التخصص / المادة</label><input type="text" id="teacherSubject"></div>
-      <div class="modal-actions">
-        <button type="submit" class="btn btn-primary">حفظ</button>
-        <button type="button" class="btn btn-ghost" onclick="UI.closeModal('teacherModal')">إلغاء</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- ===== نافذة الإعلان ===== -->
-<div class="modal-backdrop" id="annModal">
-  <div class="modal">
-    <h3>إعلان جديد</h3>
-    <form id="annForm">
-      <div class="field"><label>عنوان الإعلان</label><input type="text" id="annTitle" required></div>
-      <div class="field"><label>نص الإعلان</label><textarea id="annBody" required></textarea></div>
-      <div class="modal-actions">
-        <button type="submit" class="btn btn-primary">نشر</button>
-        <button type="button" class="btn btn-ghost" onclick="UI.closeModal('annModal')">إلغاء</button>
-      </div>
-    </form>
-  </div>
-</div>
-
 <script>
+  // دالة إغلاق الإشعار يدوياً عند النقر على زر ✕
+  function closeToast(elementId) {
+    const toast = document.getElementById(elementId);
+    if (toast) {
+      toast.style.animation = 'fadeOut 0.3s ease-out forwards';
+      setTimeout(() => toast.remove(), 300);
+    }
+  }
+
   function toggleMenu(menuId) {
     const menu = document.getElementById(menuId);
     if (menu) {

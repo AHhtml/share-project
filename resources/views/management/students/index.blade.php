@@ -192,6 +192,44 @@
         </div>
       @endif
 
+      <!-- قسم البحث والفلترة المتقدمة -->
+      <div class="card section-card" style="margin-bottom: 20px; padding: 15px;">
+        <form method="GET" action="{{ route('management.students.index') }}" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) 120px; gap: 10px; align-items: end;">
+          
+          <div class="field" style="margin: 0;">
+            <label style="font-size: 0.85rem; margin-bottom: 4px; display: block;">بحث بالاسم أو البريد</label>
+            <input type="text" name="search" value="{{ request('search') }}" placeholder="ابحث هنا..." style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
+          </div>
+
+          {{-- <div class="field" style="margin: 0;">
+            <label style="font-size: 0.85rem; margin-bottom: 4px; display: block;">الحالة</label>
+            <select name="status" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;">
+              <option value="">كل الحالات</option>
+              <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>نشط</option>
+              <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>غير نشط</option>
+            </select>
+          </div> --}}
+
+          <div class="field" style="margin: 0;">
+            <label style="font-size: 0.85rem; margin-bottom: 4px; display: block;">من تاريخ</label>
+            <input type="date" name="date_from" value="{{ request('date_from') }}" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
+          </div>
+
+          <div class="field" style="margin: 0;">
+            <label style="font-size: 0.85rem; margin-bottom: 4px; display: block;">إلى تاريخ</label>
+            <input type="date" name="date_to" value="{{ request('date_to') }}" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
+          </div>
+
+          <div style="display: flex; gap: 5px;">
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 8px; justify-content: center;">بحث</button>
+            @if(request()->anyFilled(['search', 'status', 'date_from', 'date_to']))
+              <a href="{{ route('management.students.index') }}" class="btn btn-ghost" style="padding: 8px; border: 1px solid #cbd5e1;" title="إعادة ضبط">✕</a>
+            @endif
+          </div>
+
+        </form>
+      </div>
+
       <div class="card section-card">
         <table class="data-table">
           <thead>
@@ -219,9 +257,10 @@
               <td>
                 <div style="display: flex; gap: 8px; align-items: center;">
                   <!-- زر التعديل -->
-                  <a href="{{ route('management.students.edit', $student->id) }}" class="action-btn edit" title="تعديل بيانات الطالب">
+                  <button type="button" class="action-btn edit" title="تعديل بيانات الطالب"
+                    onclick="openEditModal('{{ $student->id }}', '{{ $student->name }}', '{{ $student->email }}', '{{ $student->subjects->first()->id ?? '' }}')">
                     <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                  </a>
+                  </button>
                   
                   <!-- زر الحذف -->
                   <button type="button" class="action-btn delete" title="حذف الطالب"
@@ -233,7 +272,7 @@
             </tr>
             @empty
             <tr>
-              <td colspan="5" style="text-align: center; color: #888; padding: 20px;">لا يوجد طلاب مسجلين حالياً في المركز.</td>
+              <td colspan="5" style="text-align: center; color: #888; padding: 20px;">لا يوجد طلاب مطابقة لنتائج البحث حالياً.</td>
             </tr>
             @endforelse
           </tbody>

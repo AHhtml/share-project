@@ -9,11 +9,11 @@ use App\Models\Assignment;
 use App\Models\Subject;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage; // أضفنا مكتبة التخزين لحذف الصورة القديمة إن أردت
+use Illuminate\Support\Facades\Storage;
 
 class ManagementController extends Controller
 {
-    // عرض لوحة تحكم الإدارة مع الإحصائيات وأحدث المستخدمين
+    // عرض لوحة تحكم الإدارة مع الإحصائيات وجلب قائمة الطلاب المسجلين
     public function dashboard()
     {
         $studentsCount = User::where('role', 'student')->count();
@@ -21,15 +21,19 @@ class ManagementController extends Controller
         $lessonsCount = Lesson::count();
         $assignmentsCount = Assignment::count();
 
-        // إحضار أحدث المستخدمين المسجلين
-        $latestUsers = User::latest()->take(10)->get();
+        // جلب أحدث المستخدمين (معلمين وطلاب) مع جلب المواد المرتبطة بهم
+        $users = User::whereIn('role', ['student', 'teacher'])
+                     ->with('subjects')
+                     ->latest()
+                     ->take(10)
+                     ->get();
 
         return view('management.dashboard', compact(
             'studentsCount',
             'teachersCount',
             'lessonsCount',
             'assignmentsCount',
-            'latestUsers'
+            'users'
         ));
     }
     
@@ -40,7 +44,7 @@ class ManagementController extends Controller
         return view('management.profile', compact('user'));
     }
 
-    // تحديث بيانات الملف الشخصي للإدارة (تمت إضافة معالجة الصورة الشخصية هنا)
+    // تحديث بيانات الملف الشخصي للإدارة
     public function updateProfile(Request $request)
     {
         $user = auth()->user();
@@ -48,26 +52,25 @@ class ManagementController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
+            'phone' => 'nullable|string|max:20',
             'password' => 'nullable|min:6',
-            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // التحقق من صحة الصورة
+            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         $data = [
             'name' => $request->name,
             'email' => $request->email,
+            'phone' => $request->phone,
         ];
 
         if ($request->filled('password')) {
             $data['password'] = Hash::make($request->password);
         }
 
-        // معالجة رفع الصورة الشخصية
         if ($request->hasFile('avatar')) {
-            // حذف الصورة القديمة إذا كانت موجودة لتوفير مساحة التخزين
             if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
                 Storage::disk('public')->delete($user->avatar);
             }
-            // تخزين الصورة الجديدة في مجلد avatars داخل public storage
             $data['avatar'] = $request->file('avatar')->store('avatars', 'public');
         }
 
@@ -76,17 +79,29 @@ class ManagementController extends Controller
         return redirect()->back()->with('success', 'تم تحديث بياناتك الشخصية والصورة بنجاح');
     }
 
-    // عرض قائمة جميع المستخدمين
-    public function usersIndex()
+    // عرض قائمة جميع المستخدمين مع دعم البحث والفلترة المتقدمة (Clean Code & Query Scopes)
+    public function usersIndex(Request $request)
     {
-        $users = User::latest()->paginate(10);
+        $filters = $request->only(['search', 'status', 'date_from', 'date_to', 'sort_by']);
+
+        $users = User::filter($filters)
+                     ->paginate(10)
+                     ->withQueryString();
+
         return view('management.users.index', compact('users'));
     }
 
-    // عرض قائمة جميع الطلاب في المركز مع المساقات المتاحة
-    public function allStudentsIndex()
+    // عرض قائمة جميع الطلاب في المركز مع المساقات المتاحة ودعم البحث والفلترة المتقدمة
+    public function allStudentsIndex(Request $request)
     {
-        $students = User::where('role', 'student')->with('subjects')->latest()->paginate(10);
+        $filters = $request->only(['search', 'status', 'date_from', 'date_to', 'sort_by']);
+
+        $students = User::where('role', 'student')
+                        ->filter($filters)
+                        ->with('subjects')
+                        ->paginate(10)
+                        ->withQueryString();
+                        
         $subjects = Subject::all();
 
         return view('management.students.index', compact('students', 'subjects'));
@@ -129,6 +144,7 @@ class ManagementController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
+            'phone' => 'nullable|string|max:20',
             'password' => 'required|min:6',
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
@@ -143,6 +159,7 @@ class ManagementController extends Controller
         $student = User::create([
             'name' => $request->name,
             'email' => $request->email,
+            'phone' => $request->phone,
             'password' => Hash::make($request->password),
             'role' => 'student',
             'avatar' => $avatarPath,
@@ -168,6 +185,7 @@ class ManagementController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
+            'phone' => 'nullable|string|max:20',
             'password' => 'required|min:6',
             'role' => 'required|in:teacher,student,admin',
             'subject_id' => 'nullable|exists:subjects,id',
@@ -182,6 +200,7 @@ class ManagementController extends Controller
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
+            'phone' => $request->phone,
             'password' => Hash::make($request->password),
             'role' => $request->role,
             'subject_id' => $request->subject_id,
@@ -198,16 +217,18 @@ class ManagementController extends Controller
     }
 
     // حذف المستخدم من النظام
-    public function destroyUser(User $user)
+    public function destroy(User $user)
     {
         if ($user->id === auth()->id()) {
             return redirect()->back()->with('error', 'لا يمكنك حذف حسابك الشخصي أثناء تسجيل الدخول.');
         }
 
-        // حذف الصورة المرتبطة به من التخزين لتنظيف السيرفر
         if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
             Storage::disk('public')->delete($user->avatar);
         }
+
+        // فك ارتباطات المعلم أو الطالب بالمساقات قبل الحذف لمنع أخطاء قاعدة البيانات
+        $user->subjects()->detach();
 
         $userName = $user->name;
         $userId = $user->id;
@@ -235,6 +256,7 @@ class ManagementController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $student->id,
+            'phone' => 'nullable|string|max:20',
             'password' => 'nullable|min:6',
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
@@ -242,6 +264,7 @@ class ManagementController extends Controller
         $data = [
             'name' => $request->name,
             'email' => $request->email,
+            'phone' => $request->phone,
         ];
 
         if ($request->filled('password')) {
@@ -262,7 +285,7 @@ class ManagementController extends Controller
         return redirect()->back()->with('success', 'تم تعديل بيانات الطالب بنجاح');
     }
 
-    // تحديث بيانات المستخدم (معلم أو طالب) بالكامل بما في ذلك الصورة والمادة الدراسية
+    // تحديث بيانات المستخدم (معلم أو طالب) بالكامل
     public function update(Request $request, $id)
     {
         $user = User::findOrFail($id);
@@ -270,6 +293,7 @@ class ManagementController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
+            'phone' => 'nullable|string|max:20',
             'password' => 'nullable|min:6',
             'subject_id' => 'nullable|exists:subjects,id',
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
@@ -278,6 +302,7 @@ class ManagementController extends Controller
         $data = [
             'name' => $request->name,
             'email' => $request->email,
+            'phone' => $request->phone,
             'subject_id' => $request->subject_id,
         ];
 

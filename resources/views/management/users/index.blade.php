@@ -32,29 +32,44 @@
     transform: none !important;
     display: inline-block !important;
   }
-  .btn-back {
+  .action-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    transition: background 0.2s, transform 0.2s;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    background: #f1f5f9;
-    color: var(--text-main);
-    border-radius: 8px;
-    text-decoration: none;
-    font-weight: 500;
-    font-size: 0.9rem;
-    transition: all 0.2s ease;
-    border: 1px solid var(--border-color);
+    justify-content: center;
   }
-  .btn-back:hover {
-    background: #e2e8f0;
-    color: var(--primary-color);
+  .action-btn:hover {
+    transform: scale(1.1);
+  }
+  .action-btn.view {
+    color: #0284c7;
+  }
+  .action-btn.view:hover {
+    background: rgba(2, 132, 199, 0.1);
+  }
+  .action-btn.edit {
+    color: #d97706;
+  }
+  .action-btn.edit:hover {
+    background: rgba(217, 119, 6, 0.1);
+  }
+  .action-btn.delete {
+    color: #dc3545;
+  }
+  .action-btn.delete:hover {
+    background: rgba(220, 53, 69, 0.1);
   }
 </style>
 </head>
 <body>
 
 <div class="app-shell">
+  <!-- القائمة الجانبية الموحدة -->
   <aside class="sidebar" id="sidebar">
     <div style="padding: 20px;">
       <p style="margin-bottom: 5px; font-weight: bold;">{{ Auth::user()->name }}</p>
@@ -63,18 +78,21 @@
       <nav class="sidebar-nav" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px;">
         <a href="{{ route('management.dashboard') }}" class="btn btn-ghost nav-item" style="text-align: right; justify-content: start; text-decoration: none;">📊 لوحة التحكم</a>
         
-        <button type="button" onclick="toggleMenu('usersMenu')" class="btn btn-ghost nav-item active" style="text-align: right; justify-content: space-between; display: flex; width: 100%; background: none; border: none; cursor: pointer;">
+        <button type="button" onclick="toggleMenu('usersMenu')" class="btn btn-ghost nav-item" style="text-align: right; justify-content: space-between; display: flex; width: 100%; background: none; border: none; cursor: pointer;">
           <span>👥 إدارة المستخدمين</span>
           <span>▾</span>
         </button>
 
-        <div id="usersMenu" class="collapsible-menu" style="padding-right: 15px; margin-top: 4px;">
+        <div id="usersMenu" class="collapsible-menu open" style="padding-right: 15px; margin-top: 4px;">
           <button type="button" onclick="toggleMenu('studentsMenu')" class="btn btn-ghost" style="text-align: right; justify-content: space-between; display: flex; width: 100%; font-size: 0.9rem; background: none; border: none; cursor: pointer; color: #cbd5e1;">
             <span>🎓 إدارة الطلاب</span>
             <span>▾</span>
           </button>
           
-          <div id="studentsMenu" class="collapsible-menu" style="padding-right: 15px; margin-top: 2px;">
+          <div id="studentsMenu" class="collapsible-menu open" style="padding-right: 15px; margin-top: 2px;">
+            <a href="{{ route('management.students.index') }}" class="btn btn-ghost" style="text-align: right; font-size: 0.85rem; text-decoration: none; color: #94a3b8; display: block; padding: 4px 0;">
+                • كل الطلاب
+            </a>
             @php
                 $sidebarSubjects = App\Models\Subject::all();
             @endphp
@@ -87,10 +105,11 @@
             @endforelse
           </div>
 
-          <a href="{{ route('management.users.index') }}" class="btn btn-ghost" style="text-align: right; justify-content: start; text-decoration: none; font-size: 0.9rem; color: #cbd5e1; margin-top: 4px; display: block;">
+          <a href="{{ route('management.users.index') }}" class="btn btn-ghost" style="text-align: right; justify-content: start; text-decoration: none; font-size: 0.9rem; color: #38bdf8; margin-top: 4px; display: block; font-weight: bold;">
             📚 إدارة المعلمين
           </a>
         </div>
+        <a href="{{ route('management.profile') }}" class="btn btn-ghost nav-item" style="text-align: right; justify-content: start; text-decoration: none;">📊 ملفي الشخصي</a>
       </nav>
 
       <form action="{{ route('logout') }}" method="POST">
@@ -118,10 +137,48 @@
         <h1>إدارة المعلمين</h1>
         <p>عرض وتعديل وحذف حسابات المعلمين وتخصصاتهم في النظام.</p>
       </div>
-       <a href="{{ route('management.dashboard') }}" class="btn-back">
-            <span>←</span> عودة
-        </a>
-      <button class="btn btn-primary" onclick="UI.openModal('addUserModal')">+ إضافة معلم جديد</button>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <button class="btn btn-primary" onclick="UI.openModal('addUserModal')">+ إضافة معلم جديد</button>
+      </div>
+    </div>
+
+    <!-- شريط البحث والفلترة المتقدمة -->
+    <div class="card section-card" style="margin-bottom: 20px; padding: 15px;">
+      <form method="GET" action="{{ route('management.users.index') }}" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) 120px; gap: 10px; align-items: end;">
+        
+        <div class="field" style="margin: 0;">
+          <label style="font-size: 0.85rem; margin-bottom: 4px; display: block;">بحث بالاسم أو البريد</label>
+          <input type="text" name="search" value="{{ request('search') }}" placeholder="ابحث هنا..." style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;">
+        </div>
+
+        <div class="field" style="margin: 0;">
+          <label style="font-size: 0.85rem; margin-bottom: 4px; display: block;">المساق الدراسي</label>
+          <select name="subject_id" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;">
+            <option value="">كل المساقات</option>
+            @foreach(App\Models\Subject::all() as $subject)
+              <option value="{{ $subject->id }}" {{ request('subject_id') == $subject->id ? 'selected' : '' }}>{{ $subject->name }}</option>
+            @endforeach
+          </select>
+        </div>
+
+        <div class="field" style="margin: 0;">
+          <label style="font-size: 0.85rem; margin-bottom: 4px; display: block;">من تاريخ</label>
+          <input type="date" name="date_from" value="{{ request('date_from') }}" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;">
+        </div>
+
+        <div class="field" style="margin: 0;">
+          <label style="font-size: 0.85rem; margin-bottom: 4px; display: block;">إلى تاريخ</label>
+          <input type="date" name="date_to" value="{{ request('date_to') }}" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;">
+        </div>
+
+        <div style="display: flex; gap: 5px;">
+          <button type="submit" class="btn btn-primary" style="width: 100%; padding: 8px; justify-content: center;">بحث</button>
+          @if(request()->anyFilled(['search', 'subject_id', 'date_from', 'date_to']))
+            <a href="{{ route('management.users.index') }}" class="btn btn-ghost" style="padding: 8px; border: 1px solid #cbd5e1;" title="إعادة ضبط">✕</a>
+          @endif
+        </div>
+
+      </form>
     </div>
 
     <div class="card section-card">
@@ -130,6 +187,7 @@
           <tr>
             <th>الاسم</th>
             <th>البريد الإلكتروني</th>
+            <th>رقم الهاتف</th>
             <th>المساق (المادة)</th>
             <th>الدور (الصلاحية)</th>
             <th>تاريخ التسجيل</th>
@@ -137,42 +195,62 @@
           </tr>
         </thead>
         <tbody>
-          @forelse($users->where('role', 'teacher') as $user)
+          @php
+              // إذا كان المتحكم يرسل $users مصفاة مسبقاً، أو إذا أردت دعم الفلترة البسيطة هنا:
+              $teachers = $users->where('role', 'teacher');
+              if(request('search')) {
+                  $q = request('search');
+                  $teachers = $teachers->filter(function($u) use ($q) {
+                      return str_contains(strtolower($u->name), strtolower($q)) || str_contains(strtolower($u->email), strtolower($q));
+                  });
+              }
+              if(request('subject_id')) {
+                  $teachers = $teachers->where('subject_id', request('subject_id'));
+              }
+          @endphp
+
+          @forelse($teachers as $user)
             <tr>
               <td>{{ $user->name }}</td>
               <td>{{ $user->email }}</td>
+              <td>{{ $user->phone ?? 'غير متوفر' }}</td>
               <td>
                 <span class="badge" style="background: #e2e8f0; color: #334155; padding: 3px 8px; border-radius: 4px; font-weight: 500;">
                   {{ $user->subject->name ?? 'غير محدد' }}
                 </span>
               </td>
               <td>
-                <span class="badge" style="background: #0d6efd; color: #fff; padding: 3px 8px; border-radius: 4px;">معلم</span>
+                <span class="badge" style="background: #0284c7; color: #fff; padding: 3px 8px; border-radius: 4px;">معلم</span>
               </td>
               <td>{{ $user->created_at->format('Y-m-d') }}</td>
-              <td style="display: flex; gap: 8px; align-items: center;">
-                <a href="{{ route('management.teachers.content', $user->id) }}" class="btn btn-sm" style="background-color: #0d6efd; color: #fff; border: none; padding: 4px 10px; border-radius: 4px; text-decoration: none; cursor: pointer;">
-                  عرض
-                </a>
+              <td>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                  <!-- زر العرض -->
+                  <a href="{{ route('management.teachers.content', $user->id) }}" class="action-btn view" title="عرض المحتوى">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                  </a>
 
-                <button type="button" class="btn btn-sm" style="background-color: #ffc107; color: #000; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer;"
-                  onclick="openEditModal('{{ $user->id }}', '{{ $user->name }}', '{{ $user->email }}', '{{ $user->subject_id }}')">
-                  تعديل
-                </button>
-
-                @if($user->id !== auth()->id())
-                  <button type="button" class="btn btn-sm" style="background-color: #dc3545; color: #fff; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer;"
-                    onclick="openDeleteModal('{{ route('management.users.destroy', $user->id) }}', '{{ $user->name }}')">
-                    حذف
+                  <!-- زر التعديل -->
+                  <button type="button" class="action-btn edit" title="تعديل"
+                    onclick="openEditModal('{{ $user->id }}', '{{ $user->name }}', '{{ $user->email }}', '{{ $user->phone ?? '' }}', '{{ $user->subject_id }}')">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                   </button>
-                @else
-                  <span style="color: #888; font-size: 0.85rem;">حسابك</span>
-                @endif
+
+                  <!-- زر الحذف -->
+                  @if($user->id !== auth()->id())
+                    <button type="button" class="action-btn delete" title="حذف"
+                      onclick="openDeleteModal('{{ route('management.users.destroy', $user->id) }}', '{{ $user->name }}')">
+                      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                  @else
+                    <span style="color: #888; font-size: 0.8rem; padding: 0 4px;">حسابك</span>
+                  @endif
+                </div>
               </td>
             </tr>
           @empty
             <tr>
-              <td colspan="6" style="text-align: center; color: #888;">لا يوجد معلمون مسجلون حالياً.</td>
+              <td colspan="7" style="text-align: center; color: #888; padding: 20px;">لا يوجد معلمون مطابقة لنتائج البحث حالياً.</td>
             </tr>
           @endforelse
         </tbody>
@@ -201,8 +279,12 @@
         <input type="email" name="email" required class="form-control" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
       </div>
       <div class="field" style="margin-top: 10px;">
+        <label>رقم الهاتف</label>
+        <input type="text" name="phone" class="form-control" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc;" placeholder="أدخل رقم الهاتف">
+      </div>
+      <div class="field" style="margin-top: 10px;">
         <label>المساق (المادة)</label>
-        <select name="subject_id" class="form-control">
+        <select name="subject_id" class="form-control" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc; background: #fff;">
             <option value="">اختر المساق</option>
             @foreach(App\Models\Subject::all() as $subject)
                 <option value="{{ $subject->id }}">{{ $subject->name }}</option>
@@ -238,8 +320,12 @@
         <input type="email" name="email" id="edit_email" required class="form-control" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
       </div>
       <div class="field" style="margin-top: 10px;">
+        <label>رقم الهاتف</label>
+        <input type="text" name="phone" id="edit_phone" class="form-control" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
+      </div>
+      <div class="field" style="margin-top: 10px;">
         <label>المساق (المادة)</label>
-        <select name="subject_id" id="edit_subject_id" required class="form-control" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
+        <select name="subject_id" id="edit_subject_id" required class="form-control" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc; background: #fff;">
           <option value="">اختر المساق</option>
           @foreach(App\Models\Subject::all() as $subject)
             <option value="{{ $subject->id }}">{{ $subject->name }}</option>
@@ -258,18 +344,20 @@
   </div>
 </div>
 
-<!-- نافذة تأكيد الحذف -->
+<!-- نافذة تأكيد الحذف الاحترافية -->
 <div class="modal-backdrop" id="deleteUserModal">
   <div class="modal" style="text-align: center; max-width: 400px;">
-    <div style="font-size: 3rem; margin-bottom: 10px;">⚠️</div>
-    <h3 style="margin-bottom: 10px; color: #dc3545;">تأكيد الحذف</h3>
-    <p id="deleteModalText" style="color: #64748b; margin-bottom: 20px; font-size: 0.95rem;">هل أنت متأكد من رغبتك في حذف هذا المعلم؟</p>
+    <div style="width: 50px; height: 50px; background: #fee2e2; color: #dc3545; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto;">
+      <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+    </div>
+    <h3 style="margin-bottom: 8px; color: #1e293b;">تأكيد الحذف</h3>
+    <p id="deleteModalText" style="color: #64748b; font-size: 0.95rem; margin-bottom: 20px;">هل أنت متأكد من رغبتك في حذف هذا المعلم؟</p>
     <form id="deleteUserForm" method="POST">
       @csrf
       @method('DELETE')
       <div class="modal-actions" style="display: flex; gap: 10px; justify-content: center;">
         <button type="submit" class="btn" style="background-color: #dc3545; color: #fff; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer;">نعم، قم بالحذف</button>
-        <button type="button" class="btn btn-ghost" onclick="UI.closeModal('deleteUserModal')" style="padding: 8px 20px;">إلغاء</button>
+        <button type="button" class="btn btn-ghost" onclick="UI.closeModal('deleteUserModal')" style="padding: 8px 20px; border: 1px solid #cbd5e1;">إلغاء</button>
       </div>
     </form>
   </div>
@@ -289,12 +377,12 @@
     }
   }
 
-  function openEditModal(id, name, email, subjectId) {
+  function openEditModal(id, name, email, phone, subjectId) {
     document.getElementById('edit_name').value = name;
     document.getElementById('edit_email').value = email;
+    document.getElementById('edit_phone').value = phone;
     document.getElementById('edit_subject_id').value = subjectId ? subjectId : '';
     
-    // ربط الفورم بالمسار الديناميكي الصحيح متضمنًا الـ ID
     document.getElementById('editUserForm').action = "/management/users/" + id;
     
     UI.openModal('editUserModal');

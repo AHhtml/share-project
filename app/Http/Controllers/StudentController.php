@@ -73,6 +73,55 @@ class StudentController extends Controller
         return view('teacher.students.index', compact('subjects'));
     }
 
+    // ---------------------------------------------------------
+    // ميزة تصدير طلاب المعلم إلى ملف Excel / CSV
+    // ---------------------------------------------------------
+    public function exportStudents()
+{
+    $teacher = Auth::user();
+    
+    // جلب الطلاب المرتبطين بمساقات المعلم فقط
+    $subjects = $teacher->subjects()->with(['students' => function ($query) {
+        $query->where('role', 'student');
+    }])->get();
+
+    // تجميع كل الطلاب بدون تكرار
+    $students = $subjects->flatMap->students->unique('id');
+
+    $fileName = 'teacher_students_' . date('Y-m-d') . '.csv';
+
+    $headers = [
+        "Content-type"        => "text/csv; charset=UTF-8",
+        "Content-Disposition" => "attachment; filename=$fileName",
+        "Pragma"              => "no-cache",
+        "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+        "Expires"             => "0"
+    ];
+
+    $callback = function() use ($students) {
+        $file = fopen('php://output', 'w');
+        
+        // إضافة UTF-8 BOM لضمان دعم ظهور اللغة العربية في إكسل
+        fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+        
+        // عناوين الأعمدة مع الفاصلة المنقوطة لتوزيعها في أعمدة إكسل
+        fputcsv($file, ['الايميل', 'الاسم', 'البريد الإلكتروني'], ';');
+
+        // تفاصيل الطلاب
+        foreach ($students as $student) {
+    fputcsv($file, [
+        $student->id,
+        $student->name,
+        $student->email
+    ], ';');
+        }
+        
+        fclose($file);
+    };
+
+    return response()->stream($callback, 200, $headers);
+}
+
     // صفحة إضافة طالب جديد (للمعلم)
     public function create()
     {
@@ -299,12 +348,14 @@ class StudentController extends Controller
 
         return back()->with('success', 'تم تسليم حل الواجب/الاختبار بنجاح.');
     }
+
     // عرض صفحة تعديل الملف الشخصي للطالب
     public function editProfile()
     {
         $user = Auth::user();
         return view('student.profile.edit', compact('user'));
     }
+
     // معالجة تحديث الملف الشخصي للطالب
     public function updateProfile(Request $request)
     {
