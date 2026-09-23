@@ -16,6 +16,8 @@
   .assignment-item:last-child { border-bottom: none; }
   .badge-done { background-color: #d1e7dd; color: #0f5132; padding: 4px 10px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; }
   .badge-pending { background-color: #fff3cd; color: #664d03; padding: 4px 10px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; }
+  .btn-download { display: inline-flex; align-items: center; gap: 6px; background-color: #e9ecef; color: #333; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 500; margin-top: 8px; transition: background 0.2s; }
+  .btn-download:hover { background-color: #dee2e6; color: #000; }
   .back-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 20px; color: #495057; text-decoration: none; font-weight: 500; }
 </style>
 </head>
@@ -24,7 +26,7 @@
 <div class="page-container">
   <div class="header-card">
     <h1>📝 الواجبات والاختبارات</h1>
-    <p>تابع الاختبارات المطلوبة منك وحالة إنجازها.</p>
+    <p>تابع الاختبارات المطلوبة منك وحالة إنجازها وحمل الملفات المرفقة.</p>
   </div>
 
   <div class="content-card">
@@ -32,8 +34,18 @@
       <div class="assignment-item">
         <div>
           <div style="font-size: 1.1rem; font-weight: bold; color: #212529; margin-bottom: 4px;">{{ $assignment->title }}</div>
-          <div style="color: #6c757d; font-size: 0.9rem;">{{ $assignment->description ?? 'لا يوجد وصف إضافي' }}</div>
+          <div style="color: #6c757d; font-size: 0.9rem; margin-bottom: 6px;">{{ $assignment->description ?? 'لا يوجد وصف إضافي' }}</div>
+          
+          <!-- زر تحميل الملف المرفق إذا وجد -->
+          @if(!empty($assignment->file_path))
+            <div>
+              <a href="{{ asset('storage/' . $assignment->file_path) }}" class="btn-download" download>
+                📥 تحميل ملف الواجب
+              </a>
+            </div>
+          @endif
         </div>
+        
         <div>
           @if(in_array($assignment->id, $submittedAssignmentIds))
             <span class="badge-done">تم الإنجاز ✓</span>

@@ -41,7 +41,8 @@ Route::middleware('guest')->group(function () {
 // مسارات المستخدمين المسجلين (تتطلب تسجيل دخول)
 Route::middleware('auth')->group(function () {
     
-    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+    // تم تعديل راوت الخروج هنا ليقبل GET و POST معاً لمنع ظهور خطأ 419 نهائياً
+    Route::match(['get', 'post'], '/logout', [AuthController::class, 'logout'])->name('logout');
 
     // مسار عام لحذف الإشعارات لأي مستخدم مسجل
     Route::delete('/notifications/{id}', [StudentController::class, 'destroyNotification'])->name('notifications.destroy');
@@ -63,7 +64,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/users', [ManagementController::class, 'storeUser'])->name('users.store');
         Route::put('/users/{id}', [ManagementController::class, 'update'])->name('users.update');
         
-        // تم تصحيح هذا السطر ليتوافق مع دالة destroy في الكونترولر
+        // مسار الحذف
         Route::delete('/users/{user}', [ManagementController::class, 'destroy'])->name('users.destroy');
 
         // مسارات تصدير واستيراد المستخدمين (Data Export & Import)

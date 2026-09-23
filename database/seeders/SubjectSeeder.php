@@ -9,9 +9,9 @@ class SubjectSeeder extends Seeder
 {
     public function run(): void
     {
-        Subject::create(['name' => 'الكيمياء']);
-        Subject::create(['name' => 'الفيزياء']);
-        Subject::create(['name' => 'الرياضيات']);
-        Subject::create(['name' => 'الأحياء']);
+        Subject::firstOrCreate(['name' => 'الكيمياء']);
+        Subject::firstOrCreate(['name' => 'الفيزياء']);
+        Subject::firstOrCreate(['name' => 'الرياضيات']);
+        Subject::firstOrCreate(['name' => 'الأحياء']);
     }
 }

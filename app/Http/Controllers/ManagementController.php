@@ -85,6 +85,7 @@ class ManagementController extends Controller
         $filters = $request->only(['search', 'status', 'date_from', 'date_to', 'sort_by']);
 
         $users = User::filter($filters)
+                     ->with('subjects')
                      ->paginate(10)
                      ->withQueryString();
 
@@ -188,7 +189,9 @@ class ManagementController extends Controller
             'phone' => 'nullable|string|max:20',
             'password' => 'required|min:6',
             'role' => 'required|in:teacher,student,admin',
-            'subject_id' => 'nullable|exists:subjects,id',
+            'subject_id' => 'nullable|exists:subjects,id', // للمعلم القديم أو الاحتياط
+            'subjects' => 'nullable|array', // للمساقات المتعددة للطالب
+            'subjects.*' => 'exists:subjects,id',
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
@@ -207,8 +210,11 @@ class ManagementController extends Controller
             'avatar' => $avatarPath,
         ]);
 
+        // ربط المساقات حسب دور المستخدم
         if ($request->role === 'teacher' && $request->filled('subject_id')) {
             $user->subjects()->sync([$request->subject_id]);
+        } elseif ($request->role === 'student' && $request->has('subjects')) {
+            $user->subjects()->sync($request->subjects);
         }
 
         Log::info("الإدارة (" . auth()->user()->name . ") قامت بإضافة {$request->role} جديد باسم: {$user->name} (ID: {$user->id})");
@@ -244,8 +250,9 @@ class ManagementController extends Controller
     // عرض واجهة تعديل بيانات الطالب
     public function editStudent($id)
     {
-        $student = User::where('role', 'student')->findOrFail($id);
-        return view('management.edit-student', compact('student'));
+        $student = User::where('role', 'student')->with('subjects')->findOrFail($id);
+        $subjects = Subject::all();
+        return view('management.edit-student', compact('student', 'subjects'));
     }
 
     // تحديث بيانات الطالب في قاعدة البيانات
@@ -258,6 +265,8 @@ class ManagementController extends Controller
             'email' => 'required|email|unique:users,email,' . $student->id,
             'phone' => 'nullable|string|max:20',
             'password' => 'nullable|min:6',
+            'subjects' => 'nullable|array',
+            'subjects.*' => 'exists:subjects,id',
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
@@ -280,6 +289,9 @@ class ManagementController extends Controller
 
         $student->update($data);
 
+        // تحديث المساقات الخاصة بال학생
+        $student->subjects()->sync($request->input('subjects', []));
+
         Log::info("الإدارة (" . auth()->user()->name . ") قامت بتحديث بيانات الطالب: {$student->name} (ID: {$student->id})");
 
         return redirect()->back()->with('success', 'تم تعديل بيانات الطالب بنجاح');
@@ -296,6 +308,8 @@ class ManagementController extends Controller
             'phone' => 'nullable|string|max:20',
             'password' => 'nullable|min:6',
             'subject_id' => 'nullable|exists:subjects,id',
+            'subjects' => 'nullable|array',
+            'subjects.*' => 'exists:subjects,id',
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
@@ -325,6 +339,8 @@ class ManagementController extends Controller
             } else {
                 $user->subjects()->detach();
             }
+        } elseif ($user->role === 'student') {
+            $user->subjects()->sync($request->input('subjects', []));
         }
 
         Log::info("الإدارة (" . auth()->user()->name . ") قامت بتحديث بيانات المستخدم: {$user->name} (ID: {$user->id})");

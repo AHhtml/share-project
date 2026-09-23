@@ -201,15 +201,6 @@
             <input type="text" name="search" value="{{ request('search') }}" placeholder="ابحث هنا..." style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
           </div>
 
-          {{-- <div class="field" style="margin: 0;">
-            <label style="font-size: 0.85rem; margin-bottom: 4px; display: block;">الحالة</label>
-            <select name="status" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;">
-              <option value="">كل الحالات</option>
-              <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>نشط</option>
-              <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>غير نشط</option>
-            </select>
-          </div> --}}
-
           <div class="field" style="margin: 0;">
             <label style="font-size: 0.85rem; margin-bottom: 4px; display: block;">من تاريخ</label>
             <input type="date" name="date_from" value="{{ request('date_from') }}" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
@@ -248,7 +239,7 @@
               <td>{{ $student->email }}</td>
               <td>
                 @forelse($student->subjects as $subject)
-                    <span style="background: #e2e8f0; padding: 3px 8px; border-radius: 4px; font-size: 0.8rem; margin-left: 4px;">{{ $subject->name }}</span>
+                    <span style="background: #e2e8f0; padding: 3px 8px; border-radius: 4px; font-size: 0.8rem; margin-left: 4px; display: inline-block; margin-bottom: 2px;">{{ $subject->name }}</span>
                 @empty
                     <span style="color: #999; font-size: 0.85rem;">غير مسجل بمساق</span>
                 @endforelse
@@ -258,7 +249,7 @@
                 <div style="display: flex; gap: 8px; align-items: center;">
                   <!-- زر التعديل -->
                   <button type="button" class="action-btn edit" title="تعديل بيانات الطالب"
-                    onclick="openEditModal('{{ $student->id }}', '{{ $student->name }}', '{{ $student->email }}', '{{ $student->subjects->first()->id ?? '' }}')">
+                    onclick="openEditModal('{{ $student->id }}', '{{ $student->name }}', '{{ $student->email }}', {{ json_encode($student->subjects->pluck('id')) }})">
                     <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                   </button>
                   
@@ -285,9 +276,9 @@
   </main>
 </div>
 
-<!-- ===== نافذة إضافة طالب جديد ===== -->
+<!-- ===== نافذة إضافة طالب جديد (تم تعديلها لاختيار مواد متعددة) ===== -->
 <div class="modal-backdrop" id="addStudentModal">
-  <div class="modal">
+  <div class="modal" style="max-width: 480px;">
     <h3>تسجيل طالب جديد</h3>
     <form action="{{ route('management.users.store') }}" method="POST">
       @csrf
@@ -305,13 +296,17 @@
         <input type="password" name="password" required>
       </div>
       <div class="field">
-        <label>اختر المساق الدراسي</label>
-        <select name="subject_id" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-          <option value="">-- بدون مساق مبدئياً --</option>
-          @foreach($subjects as $subject)
-            <option value="{{ $subject->id }}">{{ $subject->name }}</option>
-          @endforeach
-        </select>
+        <label style="display: block; margin-bottom: 6px; font-weight: 500;">اختر المساقات الدراسية (يمكن اختيار أكثر من مساق)</label>
+        <div style="max-height: 160px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; background: #f8fafc;">
+          @forelse($subjects as $subject)
+            <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer; font-size: 0.9rem;">
+              <input type="checkbox" name="subjects[]" value="{{ $subject->id }}" style="width: 16px; height: 16px;">
+              <span>{{ $subject->name }}</span>
+            </label>
+          @empty
+            <span style="color: #888; font-size: 0.85rem;">لا توجد مواد متاحة</span>
+          @endforelse
+        </div>
       </div>
       <div class="modal-actions" style="margin-top: 15px; display: flex; gap: 10px;">
         <button type="submit" class="btn btn-primary">حفظ الطالب</button>
@@ -344,7 +339,7 @@
 
 <!-- ===== نافذة تعديل بيانات الطالب الاحترافية ===== -->
 <div class="custom-modal-backdrop" id="editStudentModal">
-  <div class="custom-modal-box">
+  <div class="custom-modal-box" style="max-width: 480px;">
     <div class="custom-modal-header">
       <h3>تعديل بيانات الطالب</h3>
       <button type="button" onclick="closeEditModal()" style="background:none; border:none; font-size: 1.2rem; cursor:pointer; color: #64748b;">✕</button>
@@ -366,13 +361,15 @@
           <input type="password" name="password" placeholder="اتركها فارغة إذا لم ترغب بتغييرها" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.95rem;">
         </div>
         <div class="field" style="margin-bottom: 5px;">
-          <label style="display: block; margin-bottom: 5px; font-weight: 500; color: #334155;">المساق الدراسي</label>
-          <select name="subject_id" id="editSubjectId" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.95rem; background: #fff;">
-            <option value="">-- بدون مساق --</option>
+          <label style="display: block; margin-bottom: 6px; font-weight: 500; color: #334155;">المساقات الدراسية</label>
+          <div style="max-height: 160px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; background: #f8fafc;">
             @foreach($subjects as $subject)
-              <option value="{{ $subject->id }}">{{ $subject->name }}</option>
+              <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer; font-size: 0.9rem;">
+                <input type="checkbox" name="subjects[]" value="{{ $subject->id }}" class="edit-subject-checkbox" style="width: 16px; height: 16px;">
+                <span>{{ $subject->name }}</span>
+              </label>
             @endforeach
-          </select>
+          </div>
         </div>
       </div>
       <div class="custom-modal-footer">
@@ -406,15 +403,20 @@ function closeDeleteModal() {
   document.getElementById('deleteModal').classList.remove('show');
 }
 
-// دوال التحكم بنافذة التعديل الاحترافية
-function openEditModal(id, name, email, subjectId) {
+// دوال التحكم بنافذة التعديل الاحترافية (مع تفعيل تحديد مواد الطالب الحالية مسبقاً)
+function openEditModal(id, name, email, studentSubjectIds) {
   const modal = document.getElementById('editStudentModal');
   const form = document.getElementById('editStudentForm');
   
   form.action = `/management/users/${id}`;
   document.getElementById('editName').value = name;
   document.getElementById('editEmail').value = email;
-  document.getElementById('editSubjectId').value = subjectId;
+  
+  // ضبط مربعات الاختيار للمواد الخاصة بالطالب
+  const checkboxes = document.querySelectorAll('.edit-subject-checkbox');
+  checkboxes.forEach(cb => {
+    cb.checked = studentSubjectIds.includes(parseInt(cb.value));
+  });
   
   modal.classList.add('show');
 }

@@ -66,6 +66,7 @@
   }
 
   .field input, 
+  .field select,
   .field textarea {
     width: 100%;
     padding: 10px 14px;
@@ -79,6 +80,7 @@
   }
 
   .field input:focus, 
+  .field select:focus,
   .field textarea:focus {
     border-color: #d97706;
     background-color: #fff;
@@ -155,25 +157,30 @@
     <form action="{{ route('teacher.lessons.store') }}" method="POST">
       @csrf
       
+      {{-- تمرير مادة المعلم تلقائياً في الخلفية دون إظهار قائمة اختيار --}}
+      @php
+          $defaultSubject = auth()->user()->subjects()->first();
+      @endphp
+      <input type="hidden" name="subject_id" value="{{ $defaultSubject ? $defaultSubject->id : '' }}">
+
       <div class="field">
         <label>عنوان المحاضرة</label>
-        <input type="text" name="title" placeholder="أدخل عنوان المحاضرة" required>
+        <input type="text" name="title" placeholder="أدخل عنوان المحاضرة" value="{{ old('title') }}" required>
       </div>
 
       <div class="field">
         <label>التاريخ</label>
-        <input type="date" name="date" required>
+        <input type="date" name="date" value="{{ old('date') }}" required>
       </div>
 
       <div class="field">
         <label>المدة المتوقعة</label>
-        <input type="text" name="duration" placeholder="مثال: 90 دقيقة">
+        <input type="text" name="duration" placeholder="مثال: 90 دقيقة" value="{{ old('duration') }}">
       </div>
 
       <div class="field">
-        {{-- <label>الوصف / الملاحظات</label> --}}
-        <label> رابط المحاضرة </label>
-        <textarea name="description" rows="4" placeholder="اكتب وصفاً قصيراً للمحاضرة أو الموضوعات التي سيتم تغطيتها..."></textarea>
+        <label>رابط المحاضرة / الوصف</label>
+        <textarea name="description" rows="4" placeholder="اكتب وصفاً قصيراً للمحاضرة أو الموضوعات التي سيتم تغطيتها...">{{ old('description') }}</textarea>
       </div>
 
       <div class="form-actions">

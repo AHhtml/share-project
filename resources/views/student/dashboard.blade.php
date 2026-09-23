@@ -46,8 +46,8 @@
     display: inline-block;
   }
   .notification-btn {
-    background: #f1f5f9;
-    border: none;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     padding: 8px;
     border-radius: 50%;
     cursor: pointer;
@@ -56,11 +56,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 42px;
-    height: 42px;
-    transition: background 0.2s;
+    width: 44px;
+    height: 44px;
+    transition: all 0.2s;
   }
-  .notification-btn:hover { background: #e2e8f0; }
+  .notification-btn:hover { background: rgba(255, 255, 255, 0.2); }
   .notification-badge {
     position: absolute;
     top: 2px;
@@ -75,11 +75,11 @@
   .notifications-dropdown {
     position: absolute;
     left: 0;
-    top: 50px;
+    top: 52px;
     width: 320px;
     background: #fff;
     border-radius: 12px;
-    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15), 0 8px 10px -6px rgba(0,0,0,0.1);
     display: none;
     z-index: 1000;
     border: 1px solid #e2e8f0;
@@ -104,17 +104,29 @@
     border-bottom: 1px solid #f1f5f9;
     font-size: 0.85rem;
     color: #334155;
-    display: block;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
     text-decoration: none;
     transition: background 0.2s;
   }
   .notification-item:hover { background: #f8fafc; }
+  .delete-notification-btn {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 0 4px;
+    transition: color 0.2s;
+  }
+  .delete-notification-btn:hover { color: #ef4444; }
 
   /* تصميم لوحة الترحيب الحديثة */
   .welcome-banner {
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
     color: #ffffff;
-    padding: 32px;
+    padding: 36px;
     border-radius: 16px;
     margin-bottom: 30px;
     box-shadow: 0 10px 20px -5px rgba(15, 23, 42, 0.15);
@@ -255,7 +267,7 @@
       
       <a href="#" id="toggleSubjectsMenu" onclick="toggleSubMenu(event)" style="display: flex; justify-content: space-between; align-items: center;">
         <span>📖 المواد المسجلة</span>
-        <span id="menuArrow" style="font-size: 0.8rem; transition: transform 0.3s;">▼</span>
+        <span id="menuArrow" style="font-size: 0.8rem; transition: transform 0.3s; {{ request()->routeIs('student.subject.*') ? 'transform: rotate(180deg);' : '' }}">▼</span>
       </a>
       
       <div class="sub-menu {{ request()->routeIs('student.subject.*') ? 'open' : '' }}" id="subjectsSubMenu">
@@ -289,7 +301,6 @@
   <!-- محتوى الصفحة الرئيسي -->
   <main class="main" style="display: flex; flex-direction: column; width: 100%;">
     
-
     <!-- المحتوى الداخلي -->
     <div style="padding: 32px; flex: 1;">
       @if(session('success'))
@@ -311,26 +322,29 @@
           <p>إليك ملخص لموادك الدراسية والمستجدات الخاصة بك لهذا الفصل.</p>
         </div>
         <div class="topbar-notifications">
-        <button class="notification-btn" onclick="toggleNotificationsDropdown(event)" title="الإشعارات">
-          🔔
-          @if(isset($notifications) && $notifications->count() > 0)
-            <span class="notification-badge">{{ $notifications->count() }}</span>
-          @endif
-        </button>
-        <div class="notifications-dropdown" id="notificationsDropdown">
-          <div class="notifications-header">التنبيهات والإشعارات</div>
-          <div class="notifications-body">
-            @forelse($notifications ?? [] as $notification)
-              <a href="#" class="notification-item">
-                <strong style="display: block; margin-bottom: 2px; color: #0f172a;">{{ $notification->title ?? 'تنبيه جديد' }}</strong>
-                <p style="margin: 0; color: #64748b; font-size: 0.8rem;">{{ Str::limit($notification->body ?? $notification->message, 50) }}</p>
-              </a>
-            @empty
-              <div style="padding: 20px; text-align: center; color: #64748b; font-size: 0.85rem;">لا توجد إشعارات جديدة</div>
-            @endforelse
+          <button class="notification-btn" onclick="toggleNotificationsDropdown(event)" title="الإشعارات">
+            🔔
+            @if(isset($notifications) && $notifications->count() > 0)
+              <span class="notification-badge" id="notificationBadge">{{ $notifications->count() }}</span>
+            @endif
+          </button>
+          <div class="notifications-dropdown" id="notificationsDropdown" onclick="event.stopPropagation();">
+            <div class="notifications-header">التنبيهات والإشعارات</div>
+            <div class="notifications-body" id="notificationsBody">
+              @forelse($notifications ?? [] as $notification)
+                <div class="notification-item" id="notification-{{ $notification->id }}">
+                  <a href="#" style="text-decoration: none; flex: 1; color: inherit;">
+                    <strong style="display: block; margin-bottom: 2px; color: #0f172a;">{{ $notification->title ?? 'تنبيه جديد' }}</strong>
+                    <p style="margin: 0; color: #64748b; font-size: 0.8rem;">{{ Str::limit($notification->body ?? $notification->message, 50) }}</p>
+                  </a>
+                  <button type="button" class="delete-notification-btn" onclick="deleteNotification({{ $notification->id }})" title="حذف الإشعار">✕</button>
+                </div>
+              @empty
+                <div id="noNotificationsMsg" style="padding: 20px; text-align: center; color: #64748b; font-size: 0.85rem;">لا توجد إشعارات جديدة</div>
+              @endforelse
+            </div>
           </div>
         </div>
-      </div>
       </div>
 
       <!-- قسم المواد المسجلة -->
@@ -407,6 +421,45 @@
       dropdown.classList.remove('show');
     }
   });
+
+  // دالة حذف الإشعار عبر AJAX
+  function deleteNotification(id) {
+    fetch(`/student/notifications/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        let item = document.getElementById(`notification-${id}`);
+        if (item) {
+          item.remove();
+        }
+
+        let badge = document.getElementById('notificationBadge');
+        let body = document.getElementById('notificationsBody');
+        let remainingItems = body.querySelectorAll('.notification-item');
+        
+        if (remainingItems.length > 0) {
+          if (badge) badge.innerText = remainingItems.length;
+        } else {
+          if (badge) badge.remove();
+          if (!document.getElementById('noNotificationsMsg')) {
+            body.innerHTML = '<div id="noNotificationsMsg" style="padding: 20px; text-align: center; color: #64748b; font-size: 0.85rem;">لا توجد إشعارات جديدة</div>';
+          }
+        }
+      } else {
+        alert('حدث خطأ أثناء حذف الإشعار.');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+    });
+  }
 </script>
 
 <script src="{{ asset('js/theme.js') }}"></script>

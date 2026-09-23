@@ -45,6 +45,12 @@
         <input type="email" name="email" class="form-control" value="{{ old('email') }}" required>
       </div>
 
+      <!-- حقل رقم الجوال المضاف حديثاً -->
+      <div class="form-group">
+        <label>رقم الجوال</label>
+        <input type="text" name="phone" class="form-control" value="{{ old('phone') }}" placeholder="مثال: 0591111111">
+      </div>
+
       <div class="form-group">
         <label>كلمة المرور المؤقتة</label>
         <input type="password" name="password" class="form-control" required>

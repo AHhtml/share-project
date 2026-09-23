@@ -66,12 +66,16 @@ class AssignmentController extends Controller
                 'file_path'   => $filePath,
             ]);
 
-            // إرسال إشعار لجميع طلاب المادة عند إضافة اختبار جديد
-            if ($subject && $subject->students) {
-                foreach ($subject->students as $student) {
+            // إرسال إشعار لجميع طلاب المادة عند إضافة اختبار جديد (مُعدل ليطابق هيكلة الجدول)
+            $subjectWithStudents = Subject::with('students')->find($subject->id);
+            if ($subjectWithStudents && $subjectWithStudents->students) {
+                foreach ($subjectWithStudents->students as $student) {
                     Notification::create([
                         'user_id' => $student->id,
+                        'title'   => 'اختبار جديد',
                         'message' => 'تمت إضافة اختبار/واجب جديد: ' . $assignment->title,
+                        'type'    => 'assignment',
+                        'is_read' => false,
                     ]);
                 }
             }
@@ -124,7 +128,10 @@ class AssignmentController extends Controller
                 foreach ($subject->students as $student) {
                     Notification::create([
                         'user_id' => $student->id,
+                        'title'   => 'تحديث اختبار',
                         'message' => 'تم تحديث الاختبار/الواجب: ' . $assignment->title,
+                        'type'    => 'assignment',
+                        'is_read' => false,
                     ]);
                 }
             }
@@ -170,7 +177,6 @@ class AssignmentController extends Controller
     {
         $submission = Submission::with('assignment')->findOrFail($id);
         
-        // التأكد أن المعلم الحالي هو مالك الاختبار
         if ($submission->assignment->teacher_id !== Auth::id()) {
             abort(403, 'غير مصرح لك تحميل هذا الملف.');
         }
@@ -190,7 +196,6 @@ class AssignmentController extends Controller
             $title = $assignment->title;
             $subjectId = $assignment->subject_id;
 
-            // جلب الطلاب المرتبطين بالمادة قبل الحذف
             $subject = Subject::with('students')->find($subjectId);
             
             if ($assignment->file_path && Storage::disk('public')->exists($assignment->file_path)) {
@@ -204,7 +209,10 @@ class AssignmentController extends Controller
                 foreach ($subject->students as $student) {
                     Notification::create([
                         'user_id' => $student->id,
+                        'title'   => 'حذف اختبار',
                         'message' => 'تم حذف الاختبار/الواجب: ' . $title,
+                        'type'    => 'assignment',
+                        'is_read' => false,
                     ]);
                 }
             }

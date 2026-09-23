@@ -40,13 +40,19 @@ class StudentController extends Controller
             ->latest()
             ->get();
 
+        // جلب الإشعارات والعدد الكلي لها بدون استخدام read_at
+        $notifications = Notification::where('user_id', $user->id)->latest()->take(10)->get();
+        $unreadCount = Notification::where('user_id', $user->id)->count();
+
         return view('student.dashboard', compact(
             'enrolledSubjects',
             'lessonsCount',
             'assignmentsCount',
             'completedExamsCount',
             'latestLessons',
-            'announcements'
+            'announcements',
+            'notifications',
+            'unreadCount'
         ));
     }
 
@@ -58,7 +64,10 @@ class StudentController extends Controller
         // التحقق أن الطالب مسجل في هذه المادة فعلياً
         $subject = $user->enrolledSubjects()->with(['lessons', 'assignments'])->findOrFail($id);
 
-        return view('student.show', compact('subject'));
+        // جلب الإشعارات بالطريقة الصحيحة بناءً على user_id لتجنب خطأ أعمدة لارافيل الافتراضية
+        $notifications = Notification::where('user_id', $user->id)->latest()->take(10)->get();
+
+        return view('student.show', compact('subject', 'notifications'));
     }
 
     // عرض قائمة الطلاب (للمعلم)
@@ -77,50 +86,50 @@ class StudentController extends Controller
     // ميزة تصدير طلاب المعلم إلى ملف Excel / CSV
     // ---------------------------------------------------------
     public function exportStudents()
-{
-    $teacher = Auth::user();
-    
-    // جلب الطلاب المرتبطين بمساقات المعلم فقط
-    $subjects = $teacher->subjects()->with(['students' => function ($query) {
-        $query->where('role', 'student');
-    }])->get();
-
-    // تجميع كل الطلاب بدون تكرار
-    $students = $subjects->flatMap->students->unique('id');
-
-    $fileName = 'teacher_students_' . date('Y-m-d') . '.csv';
-
-    $headers = [
-        "Content-type"        => "text/csv; charset=UTF-8",
-        "Content-Disposition" => "attachment; filename=$fileName",
-        "Pragma"              => "no-cache",
-        "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-        "Expires"             => "0"
-    ];
-
-    $callback = function() use ($students) {
-        $file = fopen('php://output', 'w');
+    {
+        $teacher = Auth::user();
         
-        // إضافة UTF-8 BOM لضمان دعم ظهور اللغة العربية في إكسل
-        fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
-        
-        // عناوين الأعمدة مع الفاصلة المنقوطة لتوزيعها في أعمدة إكسل
-        fputcsv($file, ['الايميل', 'الاسم', 'البريد الإلكتروني'], ';');
+        // جلب الطلاب المرتبطين بمساقات المعلم فقط
+        $subjects = $teacher->subjects()->with(['students' => function ($query) {
+            $query->where('role', 'student');
+        }])->get();
 
-        // تفاصيل الطلاب
-        foreach ($students as $student) {
-    fputcsv($file, [
-        $student->id,
-        $student->name,
-        $student->email
-    ], ';');
-        }
-        
-        fclose($file);
-    };
+        // تجميع كل الطلاب بدون تكرار
+        $students = $subjects->flatMap->students->unique('id');
 
-    return response()->stream($callback, 200, $headers);
-}
+        $fileName = 'teacher_students_' . date('Y-m-d') . '.csv';
+
+        $headers = [
+            "Content-type"        => "text/csv; charset=UTF-8",
+            "Content-Disposition" => "attachment; filename=$fileName",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $callback = function() use ($students) {
+            $file = fopen('php://output', 'w');
+            
+            // إضافة UTF-8 BOM لضمان دعم ظهور اللغة العربية في إكسل
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            // عناوين الأعمدة مع الفاصلة المنقوطة لتوزيعها في أعمدة إكسل
+            fputcsv($file, ['الايميل', 'الاسم', 'البريد الإلكتروني'], ';');
+
+            // تفاصيل الطلاب
+            foreach ($students as $student) {
+                fputcsv($file, [
+                    $student->id,
+                    $student->name,
+                    $student->email
+                ], ';');
+            }
+            
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
 
     // صفحة إضافة طالب جديد (للمعلم)
     public function create()
@@ -249,15 +258,16 @@ class StudentController extends Controller
     // حذف إشعار محدد عند الضغط على زر الحذف بجانبه
     public function destroyNotification($id)
     {
-        try {
-            $notification = Notification::where('id', $id)->where('user_id', Auth::id())->firstOrFail();
-            $notification->delete();
+        $notification = Notification::where('id', $id)
+                    ->where('user_id', auth()->id())
+                    ->first();
 
-            return redirect()->back()->with('success', 'تم حذف الإشعار بنجاح.');
-        } catch (\Exception $e) {
-            Log::error('فشل في حذف الإشعار: ' . $e->getMessage());
-            return back()->with('error', 'حدث خطأ ما أثناء حذف الإشعار.');
+        if ($notification) {
+            $notification->delete();
+            return response()->json(['success' => true]);
         }
+
+        return response()->json(['success' => false], 404);
     }
 
     // جلب المحاضرات بصيغة JSON
@@ -274,7 +284,7 @@ class StudentController extends Controller
         return response()->json($assignments);
     }
 
-    // عرض صفحة المحاضرات للطالب (متوافقة مع الراوت lessons)
+    // عرض صفحة المحاضرات للطالب
     public function lessons()
     {
         $user = Auth::user();
@@ -282,8 +292,11 @@ class StudentController extends Controller
         $subjectIds = $enrolledSubjects->pluck('id');
         
         $lessons = Lesson::whereIn('subject_id', $subjectIds)->with(['subject', 'teacher'])->latest()->get();
+        
+        // التعديل هنا لتجنب الخطأ
+        $notifications = Notification::where('user_id', $user->id)->latest()->take(10)->get();
 
-        return view('student.lessons', compact('enrolledSubjects', 'lessons'));
+        return view('student.lessons', compact('enrolledSubjects', 'lessons', 'notifications'));
     }
 
     // عرض صفحة الواجبات والاختبارات للطالب
@@ -295,8 +308,11 @@ class StudentController extends Controller
 
         $assignments = Assignment::whereIn('subject_id', $subjectIds)->with(['subject', 'teacher'])->latest()->get();
         $submittedAssignmentIds = Submission::where('user_id', $user->id)->pluck('assignment_id')->toArray();
+        
+        // التعديل هنا لتجنب الخطأ
+        $notifications = Notification::where('user_id', $user->id)->latest()->take(10)->get();
 
-        return view('student.assignments', compact('assignments', 'submittedAssignmentIds'));
+        return view('student.assignments', compact('assignments', 'submittedAssignmentIds', 'notifications'));
     }
 
     // عرض صفحة الإعلانات للطالب
@@ -309,8 +325,10 @@ class StudentController extends Controller
             ->orWhereNull('subject_id')
             ->latest()
             ->get();
+        
+        $notifications = Notification::where('user_id', $student->id)->latest()->take(10)->get();
 
-        return view('student.announcements', compact('announcements'));
+        return view('student.announcements', compact('announcements', 'notifications'));
     }
     
     public function downloadAssignment($id)
@@ -353,7 +371,10 @@ class StudentController extends Controller
     public function editProfile()
     {
         $user = Auth::user();
-        return view('student.profile.edit', compact('user'));
+        
+        $notifications = Notification::where('user_id', $user->id)->latest()->take(10)->get();
+        
+        return view('student.profile.edit', compact('user', 'notifications'));
     }
 
     // معالجة تحديث الملف الشخصي للطالب
